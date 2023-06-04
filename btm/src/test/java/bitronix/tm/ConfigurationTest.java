@@ -15,16 +15,19 @@
  */
 package bitronix.tm;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class ConfigurationTest extends TestCase {
+public class ConfigurationTest {
 
+    @Test
     public void testGetString() throws Exception {
         Properties props = new Properties();
         props.setProperty("1", "one");
@@ -71,6 +74,7 @@ public class ConfigurationTest extends TestCase {
         }
     }
 
+    @Test
     public void testGetIntBoolean() {
         Properties props = new Properties();
         props.setProperty("one", "1");
@@ -84,17 +88,18 @@ public class ConfigurationTest extends TestCase {
         assertEquals(3, Configuration.getInt(props, "three", -1));
         assertEquals(10, Configuration.getInt(props, "ten", 10));
 
-        assertEquals(true, Configuration.getBoolean(props, "vrai", false));
-        assertEquals(false, Configuration.getBoolean(props, "faux", true));
-        assertEquals(true, Configuration.getBoolean(props, "wrong", true));
+        assertTrue(Configuration.getBoolean(props, "vrai", false));
+        assertFalse(Configuration.getBoolean(props, "faux", true));
+        assertTrue(Configuration.getBoolean(props, "wrong", true));
     }
 
+    @Test
     public void testToString() {
         final String expectation = "a Configuration with [allowMultipleLrc=false, asynchronous2Pc=false," +
-                " backgroundRecoveryInterval=1, backgroundRecoveryIntervalSeconds=60, conservativeJournaling=false, currentNodeOnlyRecovery=true," +
-                " debugZeroResourceTransaction=false, defaultTransactionTimeout=60, disableJmx=false," +
+                " backgroundRecoveryInterval=PT1M, conservativeJournaling=false, currentNodeOnlyRecovery=true," +
+                " debugZeroResourceTransaction=false, defaultTransactionTimeout=PT1M, disableJmx=false," +
                 " exceptionAnalyzer=null, filterLogStatus=false," +
-                " forceBatchingEnabled=true, forcedWriteEnabled=true, gracefulShutdownInterval=10, jdbcProxyFactoryClass=auto," +
+                " forceBatchingEnabled=true, forcedWriteEnabled=true, gracefulShutdownInterval=PT10S, jdbcProxyFactoryClass=auto," +
                 " jndiTransactionSynchronizationRegistryName=java:comp/TransactionSynchronizationRegistry," +
                 " jndiUserTransactionName=java:comp/UserTransaction, journal=disk," +
                 " logPart1Filename=target/btm1.tlog, logPart2Filename=target/btm2.tlog, maxLogSizeInMb=2," +

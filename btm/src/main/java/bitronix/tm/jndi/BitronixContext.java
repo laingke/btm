@@ -20,17 +20,7 @@ import bitronix.tm.resource.ResourceRegistrar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.naming.Binding;
-import javax.naming.CompositeName;
-import javax.naming.Context;
-import javax.naming.Name;
-import javax.naming.NameClassPair;
-import javax.naming.NameNotFoundException;
-import javax.naming.NameParser;
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.OperationNotSupportedException;
-import javax.naming.ServiceUnavailableException;
+import javax.naming.*;
 import java.util.Hashtable;
 
 /**
@@ -44,7 +34,7 @@ import java.util.Hashtable;
  */
 public class BitronixContext implements Context {
 
-    private final static Logger log = LoggerFactory.getLogger(BitronixContext.class);
+    private static final Logger log = LoggerFactory.getLogger(BitronixContext.class);
 
     private boolean closed = false;
     private final String userTransactionName;
@@ -52,15 +42,20 @@ public class BitronixContext implements Context {
 
     public BitronixContext() {
         userTransactionName = TransactionManagerServices.getConfiguration().getJndiUserTransactionName();
-        if (log.isDebugEnabled()) { log.debug("binding transaction manager at name '" + userTransactionName + "'"); }
+        if (log.isDebugEnabled()) {
+            log.debug("binding transaction manager at name '{}'", userTransactionName);
+        }
 
         synchronizationRegistryName = TransactionManagerServices.getConfiguration().getJndiTransactionSynchronizationRegistryName();
-        if (log.isDebugEnabled()) { log.debug("binding synchronization registry at name '" + synchronizationRegistryName + "'"); }
+        if (log.isDebugEnabled()) {
+            log.debug("binding synchronization registry at name '{}'", synchronizationRegistryName);
+        }
     }
 
     private void checkClosed() throws ServiceUnavailableException {
-        if (closed)
+        if (closed) {
             throw new ServiceUnavailableException("context is closed");
+        }
     }
 
     @Override
@@ -74,21 +69,25 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public Object lookup(String s) throws NamingException {
+    public Object lookup(String name) throws NamingException {
         checkClosed();
-        if (log.isDebugEnabled()) { log.debug("looking up '" + s + "'"); }
+        if (log.isDebugEnabled()) {
+            log.debug("looking up '{}'", name);
+        }
 
-        Object o;
-        if (userTransactionName.equals(s))
-            o = TransactionManagerServices.getTransactionManager();
-        else if (synchronizationRegistryName.equals(s))
-            o = TransactionManagerServices.getTransactionSynchronizationRegistry();
-        else
-            o = ResourceRegistrar.get(s);
+        Object obj;
+        if (userTransactionName.equals(name)) {
+            obj = TransactionManagerServices.getTransactionManager();
+        } else if (synchronizationRegistryName.equals(name)) {
+            obj = TransactionManagerServices.getTransactionSynchronizationRegistry();
+        } else {
+            obj = ResourceRegistrar.get(name);
+        }
 
-        if (o == null)
-            throw new NameNotFoundException("unable to find a bound object at name '" + s + "'");
-        return o;
+        if (obj == null) {
+            throw new NameNotFoundException("unable to find a bound object at name '" + name + "'");
+        }
+        return obj;
     }
 
     @Override
@@ -97,22 +96,22 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public void bind(Name name, Object o) throws NamingException {
+    public void bind(Name name, Object obj) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
     @Override
-    public void bind(String s, Object o) throws NamingException {
+    public void bind(String name, Object obj) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
     @Override
-    public void rebind(Name name, Object o) throws NamingException {
+    public void rebind(Name name, Object obj) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
     @Override
-    public void rebind(String s, Object o) throws NamingException {
+    public void rebind(String name, Object obj) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -122,7 +121,7 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public void unbind(String s) throws NamingException {
+    public void unbind(String name) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -132,7 +131,7 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public void rename(String s, String s1) throws NamingException {
+    public void rename(String name, String s1) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -142,7 +141,7 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public NamingEnumeration<NameClassPair> list(String s) throws NamingException {
+    public NamingEnumeration<NameClassPair> list(String name) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -152,7 +151,7 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public NamingEnumeration<Binding> listBindings(String s) throws NamingException {
+    public NamingEnumeration<Binding> listBindings(String name) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -162,7 +161,7 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public void destroySubcontext(String s) throws NamingException {
+    public void destroySubcontext(String name) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -172,7 +171,7 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public Context createSubcontext(String s) throws NamingException {
+    public Context createSubcontext(String name) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -182,7 +181,7 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public Object lookupLink(String s) throws NamingException {
+    public Object lookupLink(String name) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -192,7 +191,7 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public NameParser getNameParser(String s) throws NamingException {
+    public NameParser getNameParser(String name) throws NamingException {
         return BitronixNameParser.INSTANCE;
     }
 
@@ -202,17 +201,17 @@ public class BitronixContext implements Context {
     }
 
     @Override
-    public String composeName(String s, String s1) throws NamingException {
+    public String composeName(String name, String s1) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
     @Override
-    public Object addToEnvironment(String s, Object o) throws NamingException {
+    public Object addToEnvironment(String name, Object obj) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
     @Override
-    public Object removeFromEnvironment(String s) throws NamingException {
+    public Object removeFromEnvironment(String name) throws NamingException {
         throw new OperationNotSupportedException();
     }
 
@@ -226,7 +225,7 @@ public class BitronixContext implements Context {
         throw new OperationNotSupportedException();
     }
 
-    private final static class BitronixNameParser implements NameParser {
+    private static final class BitronixNameParser implements NameParser {
         private static final BitronixNameParser INSTANCE = new BitronixNameParser();
 
         @Override

@@ -15,17 +15,20 @@
  */
 package bitronix.tm.utils;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.Properties;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class PropertyUtilsTest extends TestCase {
+public class PropertyUtilsTest {
 
+    @Test
     public void testSetProperties() throws Exception {
         Destination destination = new Destination();
 
@@ -38,7 +41,7 @@ public class PropertyUtilsTest extends TestCase {
         PropertyUtils.setProperty(destination, "subDestination.anInteger", "20");
         assertEquals(20, destination.getSubDestination().getAnInteger());
         PropertyUtils.setProperty(destination, "aBoolean", "true");
-        assertEquals(true, destination.isABoolean());
+        assertTrue(destination.isABoolean());
         PropertyUtils.setProperty(destination, "aWriteOnlyInt", "20");
 
         PrivateDestination privateDestination = new PrivateDestination();
@@ -50,6 +53,7 @@ public class PropertyUtilsTest extends TestCase {
         }
     }
 
+    @Test
     public void testSetMultipleProperties() throws Exception {
         Destination destination = new Destination();
 
@@ -59,6 +63,7 @@ public class PropertyUtilsTest extends TestCase {
         assertEquals("value2", destination.getProps().getProperty("key2"));
     }
 
+    @Test
     public void testSetClonedProperties() throws Exception {
         Destination destination = new Destination();
 
@@ -66,6 +71,7 @@ public class PropertyUtilsTest extends TestCase {
         assertEquals("value", destination.getClonedProps().getProperty("key"));
     }
 
+    @Test
     public void testSetMultipleClonedProperties() throws Exception {
         Destination destination = new Destination();
 
@@ -75,6 +81,7 @@ public class PropertyUtilsTest extends TestCase {
         assertEquals("value2", destination.getClonedProps().getProperty("key2"));
     }
 
+    @Test
     public void testSetPropertiesDirectly() throws Exception {
         Destination destination = new Destination();
 
@@ -85,6 +92,7 @@ public class PropertyUtilsTest extends TestCase {
         assertEquals("value", destination.getProps().getProperty("key"));
     }
 
+    @Test
     public void testSetClonedPropertiesDirectly() throws Exception {
         Destination destination = new Destination();
 
@@ -95,12 +103,14 @@ public class PropertyUtilsTest extends TestCase {
         assertEquals("value", destination.getClonedProps().getProperty("key"));
     }
 
+    @Test
     public void testSettingKeyForPropertiesObject() throws Exception {
         Properties p = new Properties();
         PropertyUtils.setProperty(p, "key", "value");
         assertEquals("value", p.getProperty("key"));
     }
 
+    @Test
     public void testSetPropertiesObjectLongKey() throws Exception {
         PrivateDestination destination = new PrivateDestination();
 
@@ -111,6 +121,7 @@ public class PropertyUtilsTest extends TestCase {
         assertEquals("value2", destination.getProps().get("a.dotted.key"));
     }
 
+    @Test
     public void testSmartGetProperties() throws Exception {
         Destination destination = new Destination();
         destination.setAnInteger(10);
@@ -121,17 +132,18 @@ public class PropertyUtilsTest extends TestCase {
         props.setProperty("number2", "two");
         destination.setProps(props);
 
-        Map map = PropertyUtils.getProperties(destination);
+        Map<String, Object> map = PropertyUtils.getProperties(destination);
 
         assertEquals(13, map.size());
         assertEquals("one", map.get("props.number1"));
         assertEquals("two", map.get("props.number2"));
-        assertEquals(new Integer(10), map.get("anInteger"));
+        assertEquals(10, map.get("anInteger"));
         assertEquals(Boolean.TRUE, map.get("aBoolean"));
         assertEquals(Boolean.FALSE, map.get("anotherBoolean"));
         assertNull(map.get("subDestination"));
     }
 
+    @Test
     public void testSetPrimitiveTypes() throws Exception {
         Destination destination = new Destination();
 
@@ -145,7 +157,7 @@ public class PropertyUtilsTest extends TestCase {
         PropertyUtils.setProperty(destination, "aDouble", "0.654987");
 
         assertEquals("this is my string", destination.getAString());
-        assertEquals(true, destination.isABoolean());
+        assertTrue(destination.isABoolean());
         assertEquals(100, destination.getAByte());
         assertEquals(20000, destination.getAShort());
         assertEquals(300000, destination.getAnInteger());
@@ -154,6 +166,7 @@ public class PropertyUtilsTest extends TestCase {
         assertEquals(0.654987, destination.getADouble(), 0.000001);
     }
 
+    @Test
     public void testGetPrimitiveTypes() throws Exception {
         Destination destination = new Destination();
         destination.setAString("this is my string");
@@ -167,12 +180,12 @@ public class PropertyUtilsTest extends TestCase {
 
         assertEquals("this is my string", PropertyUtils.getProperty(destination, "aString"));
         assertEquals(Boolean.TRUE, PropertyUtils.getProperty(destination, "aBoolean"));
-        assertEquals(new Byte((byte) 100), PropertyUtils.getProperty(destination, "aByte"));
-        assertEquals(new Short((short) 20000), PropertyUtils.getProperty(destination, "aShort"));
-        assertEquals(new Integer(300000), PropertyUtils.getProperty(destination, "anInteger"));
-        assertEquals(new Long(4000000L), PropertyUtils.getProperty(destination, "aLong"));
-        assertEquals(new Float(3.14f), PropertyUtils.getProperty(destination, "aFloat"));
-        assertEquals(new Double(0.654987), PropertyUtils.getProperty(destination, "aDouble"));
+        assertEquals((byte) 100, PropertyUtils.getProperty(destination, "aByte"));
+        assertEquals((short) 20000, PropertyUtils.getProperty(destination, "aShort"));
+        assertEquals(300000, PropertyUtils.getProperty(destination, "anInteger"));
+        assertEquals(4000000L, PropertyUtils.getProperty(destination, "aLong"));
+        assertEquals(3.14f, PropertyUtils.getProperty(destination, "aFloat"));
+        assertEquals(0.654987, PropertyUtils.getProperty(destination, "aDouble"));
     }
 
     public static class Destination {
@@ -291,7 +304,7 @@ public class PropertyUtilsTest extends TestCase {
         }
     }
 
-    private class PrivateDestination {
+    private static class PrivateDestination {
         private Properties props;
         private PrivateDestination subDestination;
 

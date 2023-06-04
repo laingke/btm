@@ -17,26 +17,18 @@ package bitronix.tm.twopc;
 
 import bitronix.tm.BitronixTransaction;
 import bitronix.tm.TransactionManagerServices;
-import bitronix.tm.internal.BitronixHeuristicCommitException;
-import bitronix.tm.internal.BitronixHeuristicMixedException;
-import bitronix.tm.internal.BitronixSystemException;
-import bitronix.tm.internal.XAResourceHolderState;
-import bitronix.tm.internal.XAResourceManager;
+import bitronix.tm.internal.*;
 import bitronix.tm.twopc.executor.Executor;
 import bitronix.tm.twopc.executor.Job;
 import bitronix.tm.utils.Decoder;
+import jakarta.transaction.HeuristicCommitException;
+import jakarta.transaction.HeuristicMixedException;
+import jakarta.transaction.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.transaction.HeuristicCommitException;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.Status;
 import javax.transaction.xa.XAException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Phase 1 &amp; 2 Rollback logic engine.
@@ -45,7 +37,7 @@ import java.util.Set;
  */
 public final class Rollbacker extends AbstractPhaseEngine {
 
-    private final static Logger log = LoggerFactory.getLogger(Rollbacker.class);
+    private static final Logger log = LoggerFactory.getLogger(Rollbacker.class);
 
     private final List<XAResourceHolderState> interestedResources = Collections.synchronizedList(new ArrayList<XAResourceHolderState>());
     // this list has to be thread-safe as the RollbackJobs can be executed in parallel (when async 2PC is configured)
@@ -59,10 +51,10 @@ public final class Rollbacker extends AbstractPhaseEngine {
      * Rollback the current XA transaction. Transaction will not timeout while changing status but rather by some
      * extra logic that will manually throw the exception after doing as much cleanup as possible.
      *
-     * @param transaction the transaction to rollback.
+     * @param transaction         the transaction to rollback.
      * @param interestedResources resources that should be rolled back.
-     * @throws HeuristicCommitException when all resources committed instead.
-     * @throws HeuristicMixedException when some resources committed and some rolled back.
+     * @throws HeuristicCommitException                     when all resources committed instead.
+     * @throws HeuristicMixedException                      when some resources committed and some rolled back.
      * @throws bitronix.tm.internal.BitronixSystemException when an internal error occured.
      */
     public void rollback(BitronixTransaction transaction, List<XAResourceHolderState> interestedResources) throws HeuristicMixedException, HeuristicCommitException, BitronixSystemException {
@@ -79,7 +71,9 @@ public final class Rollbacker extends AbstractPhaseEngine {
             throwException("transaction failed during rollback of " + transaction, ex, interestedResources.size());
         }
 
-        if (log.isDebugEnabled()) { log.debug("rollback executed on resources " + Decoder.collectResourcesNames(rolledbackResources)); }
+        if (log.isDebugEnabled()) {
+            log.debug("rollback executed on resources " + Decoder.collectResourcesNames(rolledbackResources));
+        }
 
         // Some resources might have failed the 2nd phase of 2PC.
         // Only resources which successfully rolled back should be registered in the journal, the other
@@ -113,8 +107,7 @@ public final class Rollbacker extends AbstractPhaseEngine {
         for (int i = 0; i < exceptions.size(); i++) {
             Exception ex = exceptions.get(i);
             XAResourceHolderState resourceHolder = resources.get(i);
-            if (ex instanceof XAException) {
-                XAException xaEx = (XAException) ex;
+            if (ex instanceof XAException xaEx) {
                 switch (xaEx.errorCode) {
                     case XAException.XA_HEURHAZ:
                         hazard = true;
@@ -127,20 +120,21 @@ public final class Rollbacker extends AbstractPhaseEngine {
                     default:
                         errorResources.add(resourceHolder);
                 }
-            }
-            else
+            } else {
                 errorResources.add(resourceHolder);
+            }
         }
 
-        if (!hazard && heuristicResources.size() == totalResourceCount)
+        if (!hazard && heuristicResources.size() == totalResourceCount) {
             throw new BitronixHeuristicCommitException(message + ":" +
                     " all resource(s) " + Decoder.collectResourcesNames(heuristicResources) +
                     " improperly unilaterally committed", phaseException);
-        else
+        } else {
             throw new BitronixHeuristicMixedException(message + ":" +
                     (errorResources.size() > 0 ? " resource(s) " + Decoder.collectResourcesNames(errorResources) + " threw unexpected exception" : "") +
                     (errorResources.size() > 0 && heuristicResources.size() > 0 ? " and" : "") +
                     (heuristicResources.size() > 0 ? " resource(s) " + Decoder.collectResourcesNames(heuristicResources) + " improperly unilaterally committed" + (hazard ? " (or hazard happened)" : "") : ""), phaseException);
+        }
     }
 
     @Override
@@ -151,8 +145,9 @@ public final class Rollbacker extends AbstractPhaseEngine {
     @Override
     protected boolean isParticipating(XAResourceHolderState xaResourceHolderState) {
         for (XAResourceHolderState resourceHolderState : interestedResources) {
-            if (xaResourceHolderState == resourceHolderState)
+            if (xaResourceHolderState == resourceHolderState) {
                 return true;
+            }
         }
         return false;
     }
@@ -176,10 +171,14 @@ public final class Rollbacker extends AbstractPhaseEngine {
 
         private void rollbackResource(XAResourceHolderState resourceHolder) throws XAException {
             try {
-                if (log.isDebugEnabled()) { log.debug("trying to rollback resource " + resourceHolder); }
+                if (log.isDebugEnabled()) {
+                    log.debug("trying to rollback resource " + resourceHolder);
+                }
                 resourceHolder.getXAResource().rollback(resourceHolder.getXid());
                 rolledbackResources.add(resourceHolder);
-                if (log.isDebugEnabled()) { log.debug("rolled back resource " + resourceHolder); }
+                if (log.isDebugEnabled()) {
+                    log.debug("rolled back resource " + resourceHolder);
+                }
             } catch (XAException ex) {
                 handleXAException(resourceHolder, ex);
             }
@@ -207,9 +206,13 @@ public final class Rollbacker extends AbstractPhaseEngine {
 
         private void forgetHeuristicRollback(XAResourceHolderState resourceHolder) {
             try {
-                if (log.isDebugEnabled()) { log.debug("handling heuristic rollback on resource " + resourceHolder.getXAResource()); }
+                if (log.isDebugEnabled()) {
+                    log.debug("handling heuristic rollback on resource " + resourceHolder.getXAResource());
+                }
                 resourceHolder.getXAResource().forget(resourceHolder.getXid());
-                if (log.isDebugEnabled()) { log.debug("forgotten heuristically rolled back resource " + resourceHolder.getXAResource()); }
+                if (log.isDebugEnabled()) {
+                    log.debug("forgotten heuristically rolled back resource " + resourceHolder.getXAResource());
+                }
             } catch (XAException ex) {
                 String extraErrorDetails = TransactionManagerServices.getExceptionAnalyzer().extractExtraXAExceptionDetails(ex);
                 log.error("cannot forget " + resourceHolder.getXid() + " assigned to " + resourceHolder.getXAResource() +

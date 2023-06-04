@@ -28,19 +28,19 @@ import bitronix.tm.resource.common.XAPool;
 import bitronix.tm.resource.common.XAStatefulHolder.State;
 import bitronix.tm.resource.jdbc.JdbcPooledConnection;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.util.Iterator;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- *
  * @author Ludovic Orban
  */
-public abstract class AbstractMockJdbcTest extends TestCase {
+public abstract class AbstractMockJdbcTest {
 
     private final static Logger log = LoggerFactory.getLogger(AbstractMockJdbcTest.class);
 
@@ -50,11 +50,9 @@ public abstract class AbstractMockJdbcTest extends TestCase {
     protected static final String DATASOURCE1_NAME = "pds1";
     protected static final String DATASOURCE2_NAME = "pds2";
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-        Iterator<String> it = ResourceRegistrar.getResourcesUniqueNames().iterator();
-        while (it.hasNext()) {
-            String name = it.next();
+        for (String name : ResourceRegistrar.getResourcesUniqueNames()) {
             ResourceRegistrar.unregister(ResourceRegistrar.get(name));
         }
 
@@ -91,7 +89,7 @@ public abstract class AbstractMockJdbcTest extends TestCase {
         XAPool<JdbcPooledConnection, JdbcPooledConnection> p2 = getPool(this.poolingDataSource2);
         registerPoolEventListener(p2);
 
-        TransactionManagerServices.getConfiguration().setGracefulShutdownInterval(2);
+        TransactionManagerServices.getConfiguration().setGracefulShutdownInterval(Duration.ofSeconds(2L));
 
         // start TM
         TransactionManagerServices.getTransactionManager();
@@ -108,10 +106,8 @@ public abstract class AbstractMockJdbcTest extends TestCase {
     }
 
     private void registerPoolEventListener(XAPool<JdbcPooledConnection, JdbcPooledConnection> pool) throws Exception {
-        Iterator<JdbcPooledConnection> iterator = pool.getXAResourceHolders().iterator();
-        while (iterator.hasNext()) {
-        	JdbcPooledConnection jdbcPooledConnection = iterator.next();
-            jdbcPooledConnection.addStateChangeEventListener(new StateChangeListener<JdbcPooledConnection>() {
+        for (JdbcPooledConnection jdbcPooledConnection : pool.getXAResourceHolders()) {
+            jdbcPooledConnection.addStateChangeEventListener(new StateChangeListener<>() {
                 @Override
                 public void stateChanged(JdbcPooledConnection source, State oldState, State newState) {
                     if (newState == State.IN_POOL)
@@ -127,10 +123,12 @@ public abstract class AbstractMockJdbcTest extends TestCase {
         }
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         try {
-            if (log.isDebugEnabled()) { log.debug("*** tearDown rollback"); }
+            if (log.isDebugEnabled()) {
+                log.debug("*** tearDown rollback");
+            }
             TransactionManagerServices.getTransactionManager().rollback();
         } catch (Exception ex) {
             // ignore

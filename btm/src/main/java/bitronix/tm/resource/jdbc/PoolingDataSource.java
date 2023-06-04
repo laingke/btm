@@ -53,7 +53,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @SuppressWarnings("serial")
 public class PoolingDataSource extends ResourceBean implements DataSource, XAResourceProducer<JdbcPooledConnection, JdbcPooledConnection>, PoolingDataSourceMBean {
 
-    private final static Logger log = LoggerFactory.getLogger(PoolingDataSource.class);
+    private static final Logger log = LoggerFactory.getLogger(PoolingDataSource.class);
 
     private volatile transient XAPool<JdbcPooledConnection, JdbcPooledConnection> pool;
     private volatile transient XADataSource xaDataSource;
@@ -69,10 +69,10 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
     private volatile String cursorHoldability;
     private volatile String localAutoCommit;
     private volatile String jmxName;
-    private final List<ConnectionCustomizer> connectionCustomizers = new CopyOnWriteArrayList<ConnectionCustomizer>();
+    private final List<ConnectionCustomizer> connectionCustomizers = new CopyOnWriteArrayList<>();
 
     public PoolingDataSource() {
-        xaResourceHolderMap = new ConcurrentHashMap<XAResource, JdbcPooledConnection>();
+        xaResourceHolderMap = new ConcurrentHashMap<>();
     }
 
     /**
@@ -80,8 +80,9 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
      */
     @Override
     public synchronized void init() {
-    	if (this.pool != null)
-    		return;
+        if (this.pool != null) {
+            return;
+        }
 
         try {
             buildXAPool();
@@ -93,11 +94,14 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
     }
 
     private void buildXAPool() throws Exception {
-        if (pool != null)
+        if (pool != null) {
             return;
+        }
 
-        if (log.isDebugEnabled()) { log.debug("building XA pool for " + getUniqueName() + " with " + getMinPoolSize() + " connection(s)"); }
-        pool = new XAPool<JdbcPooledConnection, JdbcPooledConnection>(this, this, xaDataSource);
+        if (log.isDebugEnabled()) {
+            log.debug("building XA pool for {} with {} connection(s)", getUniqueName(), getMinPoolSize());
+        }
+        pool = new XAPool<>(this, this, xaDataSource);
         boolean builtXaFactory = false;
         if (xaDataSource == null) {
             xaDataSource = (XADataSource) pool.getXAFactory();
@@ -106,7 +110,9 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
         try {
             ResourceRegistrar.register(this);
         } catch (RecoveryException ex) {
-            if (builtXaFactory) xaDataSource = null;
+            if (builtXaFactory) {
+                xaDataSource = null;
+            }
             pool = null;
             throw ex;
         }
@@ -123,6 +129,7 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
      * Inject a pre-configured XADataSource instead of relying on className and driverProperties
      * to build one. Upon deserialization the xaDataSource will be null and will need to be
      * manually re-injected.
+     *
      * @param xaDataSource the pre-configured XADataSource.
      */
     public void setXaDataSource(XADataSource xaDataSource) {
@@ -139,6 +146,7 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
     /**
      * When set, the specified query will be executed on the connection acquired from the pool before being handed to
      * the caller. The connections won't be tested when not set. Default value is null.
+     *
      * @param testQuery the query that will be used to test connections.
      */
     public void setTestQuery(String testQuery) {
@@ -149,7 +157,8 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
      * When set and the underlying JDBC driver supports JDBC 4 isValid(), a Connection.isValid() call
      * is performed to test the connection before handing it to the caller.
      * If both testQuery and enableJdbc4ConnectionTest are set, enableJdbc4ConnectionTest takes precedence.
-     * @param enableJdbc4ConnectionTest  true if JDBC 4 isValid() testing should be performed, false otherwise.
+     *
+     * @param enableJdbc4ConnectionTest true if JDBC 4 isValid() testing should be performed, false otherwise.
      */
     public void setEnableJdbc4ConnectionTest(boolean enableJdbc4ConnectionTest) {
         this.enableJdbc4ConnectionTest = enableJdbc4ConnectionTest;
@@ -165,6 +174,7 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
     /**
      * Determines how many seconds the connection test logic
      * will wait for a response from the database.
+     *
      * @param connectionTestTimeout connection timeout
      */
     public void setConnectionTestTimeout(int connectionTestTimeout) {
@@ -204,6 +214,7 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
      * Set the target maximum size of the prepared statement cache.  In
      * reality under certain unusual conditions the cache may temporarily
      * drift higher in size.
+     *
      * @param preparedStatementCacheSize the target maximum prepared statement cache size.
      */
     public void setPreparedStatementCacheSize(int preparedStatementCacheSize) {
@@ -219,6 +230,7 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
 
     /**
      * Set the default isolation level for connections.
+     *
      * @param isolationLevel the default isolation level.
      */
     public void setIsolationLevel(String isolationLevel) {
@@ -229,30 +241,32 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
      * @return cursorHoldability the default cursor holdability.
      */
     public String getCursorHoldability() {
-    	return cursorHoldability;
+        return cursorHoldability;
     }
 
     /**
      * Set the default cursor holdability for connections.
+     *
      * @param cursorHoldability the default cursor holdability.
      */
     public void setCursorHoldability(String cursorHoldability) {
-    	this.cursorHoldability = cursorHoldability;
+        this.cursorHoldability = cursorHoldability;
     }
 
     /**
      * @return localAutoCommit the default local transactions autocommit mode.
      */
     public String getLocalAutoCommit() {
-    	return localAutoCommit;
+        return localAutoCommit;
     }
 
     /**
      * Set the default local transactions autocommit mode.
+     *
      * @param localAutoCommit the default local transactions autocommit mode.
      */
     public void setLocalAutoCommit(String localAutoCommit) {
-    	this.localAutoCommit = localAutoCommit;
+        this.localAutoCommit = localAutoCommit;
     }
 
     public void addConnectionCustomizer(ConnectionCustomizer connectionCustomizer) {
@@ -280,21 +294,21 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
         }
     }
 
-    void fireOnLease(Connection connection){
+    void fireOnLease(Connection connection) {
         for (ConnectionCustomizer connectionCustomizer : connectionCustomizers) {
             try {
                 connectionCustomizer.onLease(connection, getUniqueName());
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 log.warn("ConnectionCustomizer.onLease() failed for " + connectionCustomizer, ex);
             }
         }
     }
 
-    void fireOnRelease(Connection connection){
+    void fireOnRelease(Connection connection) {
         for (ConnectionCustomizer connectionCustomizer : connectionCustomizers) {
             try {
                 connectionCustomizer.onRelease(connection, getUniqueName());
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 log.warn("ConnectionCustomizer.onRelease() failed for " + connectionCustomizer, ex);
             }
         }
@@ -318,15 +332,21 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
         }
 
         init();
-        if (log.isDebugEnabled()) { log.debug("acquiring connection from " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("acquiring connection from {}", this);
+        }
         if (pool == null) {
-            if (log.isDebugEnabled()) { log.debug("pool is closed, returning null connection"); }
+            if (log.isDebugEnabled()) {
+                log.debug("pool is closed, returning null connection");
+            }
             return null;
         }
 
         try {
             Connection conn = (Connection) pool.getConnectionHandle();
-            if (log.isDebugEnabled()) { log.debug("acquired connection from " + this); }
+            if (log.isDebugEnabled()) {
+                log.debug("acquired connection from {}", this);
+            }
             return conn;
         } catch (Exception ex) {
             throw new SQLException("unable to get a connection from pool of " + this, ex);
@@ -335,12 +355,14 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
 
     @Override
     public Connection getConnection(String username, String password) throws SQLException {
-        if (log.isDebugEnabled()) { log.debug("JDBC connections are pooled, username and password ignored"); }
+        if (log.isDebugEnabled()) {
+            log.debug("JDBC connections are pooled, username and password ignored");
+        }
         return getConnection();
     }
 
     @Override
-	public String toString() {
+    public String toString() {
         return "a PoolingDataSource containing " + pool;
     }
 
@@ -349,8 +371,9 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
     @Override
     public XAResourceHolderState startRecovery() throws RecoveryException {
         init();
-        if (recoveryConnectionHandle != null)
+        if (recoveryConnectionHandle != null) {
             throw new RecoveryException("recovery already in progress on " + this);
+        }
 
         try {
             recoveryConnectionHandle = (Connection) pool.getConnectionHandle(false);
@@ -364,16 +387,18 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
 
     @Override
     public void endRecovery() throws RecoveryException {
-        if (recoveryConnectionHandle == null)
+        if (recoveryConnectionHandle == null) {
             return;
+        }
 
         try {
-            if (log.isDebugEnabled()) { log.debug("recovery xa resource is being closed: " + recoveryXAResourceHolder); }
+            if (log.isDebugEnabled()) {
+                log.debug("recovery xa resource is being closed: {}", recoveryXAResourceHolder);
+            }
             recoveryConnectionHandle.close();
         } catch (Exception ex) {
             throw new RecoveryException("error ending recovery on " + this, ex);
-        }
-        finally {
+        } finally {
             recoveryConnectionHandle = null;
 
             // the recoveryXAResourceHolder actually wraps the recoveryConnectionHandle so closing it
@@ -391,17 +416,21 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
 
     @Override
     public boolean isFailed() {
-        return (pool != null ? pool.isFailed() : false);
+        return (pool != null && pool.isFailed());
     }
 
     @Override
     public void close() {
         if (pool == null) {
-            if (log.isDebugEnabled()) { log.debug("trying to close already closed PoolingDataSource " + getUniqueName()); }
+            if (log.isDebugEnabled()) {
+                log.debug("trying to close already closed PoolingDataSource {}", getUniqueName());
+            }
             return;
         }
 
-        if (log.isDebugEnabled()) { log.debug("closing " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("closing {}", this);
+        }
         pool.close();
         pool = null;
 
@@ -417,9 +446,9 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
 
     @Override
     public JdbcPooledConnection createPooledConnection(Object xaFactory, ResourceBean bean) throws Exception {
-        if (!(xaFactory instanceof XADataSource))
+        if (!(xaFactory instanceof XADataSource xads)) {
             throw new IllegalArgumentException("class '" + xaFactory.getClass().getName() + "' does not implement " + XADataSource.class.getName());
-        XADataSource xads = (XADataSource) xaFactory;
+        }
         JdbcPooledConnection pooledConnection = new JdbcPooledConnection(this, xads.getXAConnection());
         xaResourceHolderMap.put(pooledConnection.getXAResource(), pooledConnection);
         return pooledConnection;
@@ -434,11 +463,14 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
     /**
      * {@link PoolingDataSource} must alway have a unique name so this method builds a reference to this object using
      * the unique name as {@link javax.naming.RefAddr}.
+     *
      * @return a reference to this {@link PoolingDataSource}.
      */
     @Override
     public Reference getReference() throws NamingException {
-        if (log.isDebugEnabled()) { log.debug("creating new JNDI reference of " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("creating new JNDI reference of {}", this);
+        }
         return new Reference(
                 PoolingDataSource.class.getName(),
                 new StringRefAddr("uniqueName", getUniqueName()),
@@ -482,9 +514,9 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
             return (T) xaDataSource;
         }
         throw new SQLException(getClass().getName() + " is not a wrapper for " + iface);
-	}
+    }
 
-	/* management */
+    /* management */
 
     @Override
     public int getInPoolSize() {
@@ -506,7 +538,8 @@ public class PoolingDataSource extends ResourceBean implements DataSource, XARes
 
     }
 
-	public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		throw new SQLFeatureNotSupportedException();
-	}
+    @Override
+    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
+        throw new SQLFeatureNotSupportedException();
+    }
 }

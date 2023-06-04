@@ -19,18 +19,17 @@ import bitronix.tm.TransactionManagerServices;
 import bitronix.tm.utils.Decoder;
 
 import javax.transaction.xa.XAException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Subclass of {@link javax.transaction.SystemException} supporting nested {@link Throwable}s.
+ * Subclass of {@link jakarta.transaction.SystemException} supporting nested {@link Throwable}s.
  *
  * @author Ludovic Orban
  */
 public class BitronixMultiSystemException extends BitronixSystemException {
 
-    private List<? extends Exception> exceptions = new ArrayList<Exception>();
-    private List<XAResourceHolderState> resourceStates = new ArrayList<XAResourceHolderState>();
+    private List<? extends Exception> exceptions;
+    private List<XAResourceHolderState> resourceStates;
 
     public BitronixMultiSystemException(String string, List<? extends Exception> exceptions, List<XAResourceHolderState> resourceStates) {
         super(string);
@@ -56,12 +55,13 @@ public class BitronixMultiSystemException extends BitronixSystemException {
                 errorMessage.append(" - ");
             }
             errorMessage.append(throwable.getClass().getName());
-            if (throwable instanceof XAException) {
-                XAException xaEx = (XAException) throwable;
+            if (throwable instanceof XAException xaEx) {
                 errorMessage.append("(");
                 errorMessage.append(Decoder.decodeXAExceptionErrorCode(xaEx));
                 String extraErrorDetails = TransactionManagerServices.getExceptionAnalyzer().extractExtraXAExceptionDetails(xaEx);
-                if (extraErrorDetails != null) errorMessage.append(" - ").append(extraErrorDetails);
+                if (extraErrorDetails != null) {
+                    errorMessage.append(" - ").append(extraErrorDetails);
+                }
                 errorMessage.append(")");
             }
             errorMessage.append(" - ");
@@ -74,14 +74,16 @@ public class BitronixMultiSystemException extends BitronixSystemException {
 
     public boolean isUnilateralRollback() {
         for (Throwable throwable : exceptions) {
-            if (!(throwable instanceof BitronixRollbackSystemException))
+            if (!(throwable instanceof BitronixRollbackSystemException)) {
                 return false;
+            }
         }
         return true;
     }
 
     /**
      * Get the list of exceptions that have been thrown during execution.
+     *
      * @return the list of exceptions that have been thrown during execution.
      */
     public List<? extends Exception> getExceptions() {
@@ -92,6 +94,7 @@ public class BitronixMultiSystemException extends BitronixSystemException {
      * Get the list of XAResourceHolderStates which threw an exception during execution.
      * This list always contains exactly one resource per exception present in {@link #getExceptions} list.
      * Indices of both list always match a resource against the exception it threw.
+     *
      * @return the list of resource which threw an exception during execution.
      */
     public List<XAResourceHolderState> getResourceStates() {

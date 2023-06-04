@@ -20,21 +20,11 @@ import bitronix.tm.resource.jdbc.LruStatementCache.CacheKey;
 import bitronix.tm.resource.jdbc.PooledConnectionProxy;
 import bitronix.tm.resource.jdbc.lrc.LrcXAResource;
 import bitronix.tm.utils.ClassLoaderUtils;
-import net.sf.cglib.proxy.Callback;
-import net.sf.cglib.proxy.CallbackFilter;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.Factory;
-import net.sf.cglib.proxy.LazyLoader;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
+import net.sf.cglib.proxy.*;
 
 import javax.sql.XAConnection;
 import java.lang.reflect.Method;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,7 +43,9 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
     private final Class<PreparedStatement> proxyPreparedStatementClass;
     private final Class<ResultSet> proxyResultSetClass;
 
-    // For LRC we just use the standard Java Proxies
+    /**
+     * For LRC we just use the standard Java Proxies
+     */
     private final JdbcJavaProxyFactory lrcProxyFactory;
 
     JdbcCglibProxyFactory() {
@@ -65,7 +57,9 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
         lrcProxyFactory = new JdbcJavaProxyFactory();
     }
 
-	/** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Connection getProxyConnection(JdbcPooledConnection jdbcPooledConnection, Connection connection) {
         ConnectionJavaProxy methodInterceptor = new ConnectionJavaProxy(jdbcPooledConnection, connection);
@@ -73,15 +67,17 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
         FastDispatcher fastDispatcher = new FastDispatcher(connection);
 
         try {
-            Connection connectionCglibProxy = proxyConnectionClass.newInstance();
-            ((Factory) connectionCglibProxy).setCallbacks(new Callback[] { fastDispatcher, interceptor });
+            Connection connectionCglibProxy = proxyConnectionClass.getDeclaredConstructor().newInstance();
+            ((Factory) connectionCglibProxy).setCallbacks(new Callback[]{fastDispatcher, interceptor});
             return connectionCglibProxy;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Statement getProxyStatement(JdbcPooledConnection jdbcPooledConnection, Statement statement) {
         StatementJavaProxy methodInterceptor = new StatementJavaProxy(jdbcPooledConnection, statement);
@@ -89,15 +85,17 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
         FastDispatcher fastDispatcher = new FastDispatcher(statement);
 
         try {
-            Statement statementCglibProxy = proxyStatementClass.newInstance();
-            ((Factory) statementCglibProxy).setCallbacks(new Callback[] { fastDispatcher, interceptor });
+            Statement statementCglibProxy = proxyStatementClass.getDeclaredConstructor().newInstance();
+            ((Factory) statementCglibProxy).setCallbacks(new Callback[]{fastDispatcher, interceptor});
             return statementCglibProxy;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CallableStatement getProxyCallableStatement(JdbcPooledConnection jdbcPooledConnection, CallableStatement statement) {
         CallableStatementJavaProxy methodInterceptor = new CallableStatementJavaProxy(jdbcPooledConnection, statement);
@@ -105,15 +103,17 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
         FastDispatcher fastDispatcher = new FastDispatcher(statement);
 
         try {
-            CallableStatement statementCglibProxy = proxyCallableStatementClass.newInstance();
-            ((Factory) statementCglibProxy).setCallbacks(new Callback[] { fastDispatcher, interceptor });
+            CallableStatement statementCglibProxy = proxyCallableStatementClass.getDeclaredConstructor().newInstance();
+            ((Factory) statementCglibProxy).setCallbacks(new Callback[]{fastDispatcher, interceptor});
             return statementCglibProxy;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public PreparedStatement getProxyPreparedStatement(JdbcPooledConnection jdbcPooledConnection, PreparedStatement statement, CacheKey cacheKey) {
         PreparedStatementJavaProxy methodInterceptor = new PreparedStatementJavaProxy(jdbcPooledConnection, statement, cacheKey);
@@ -121,37 +121,43 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
         FastDispatcher fastDispatcher = new FastDispatcher(statement);
 
         try {
-            PreparedStatement statementCglibProxy = proxyPreparedStatementClass.newInstance();
-            ((Factory) statementCglibProxy).setCallbacks(new Callback[] { fastDispatcher, interceptor });
+            PreparedStatement statementCglibProxy = proxyPreparedStatementClass.getDeclaredConstructor().newInstance();
+            ((Factory) statementCglibProxy).setCallbacks(new Callback[]{fastDispatcher, interceptor});
             return statementCglibProxy;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
-	public ResultSet getProxyResultSet(Statement statement, ResultSet resultSet) {
+    public ResultSet getProxyResultSet(Statement statement, ResultSet resultSet) {
         ResultSetJavaProxy methodInterceptor = new ResultSetJavaProxy(statement, resultSet);
         Interceptor interceptor = new Interceptor(methodInterceptor);
         FastDispatcher fastDispatcher = new FastDispatcher(resultSet);
 
         try {
-            ResultSet resultSetCglibProxy = proxyResultSetClass.newInstance();
-            ((Factory) resultSetCglibProxy).setCallbacks(new Callback[] { fastDispatcher, interceptor });
+            ResultSet resultSetCglibProxy = proxyResultSetClass.getDeclaredConstructor().newInstance();
+            ((Factory) resultSetCglibProxy).setCallbacks(new Callback[]{fastDispatcher, interceptor});
             return resultSetCglibProxy;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-	}
+    }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public XAConnection getProxyXaConnection(Connection connection) {
         return lrcProxyFactory.getProxyXaConnection(connection);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Connection getProxyConnection(LrcXAResource xaResource, Connection connection) {
         return lrcProxyFactory.getProxyConnection(xaResource, connection);
@@ -168,7 +174,7 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
 
         Enhancer enhancer = new Enhancer();
         enhancer.setInterfaces(interfaces.toArray(new Class<?>[0]));
-        enhancer.setCallbackTypes(new Class[] {FastDispatcher.class, Interceptor.class} );
+        enhancer.setCallbackTypes(new Class[]{FastDispatcher.class, Interceptor.class});
         enhancer.setCallbackFilter(new InterceptorFilter(new ConnectionJavaProxy()));
         return enhancer.createClass();
     }
@@ -179,7 +185,7 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
 
         Enhancer enhancer = new Enhancer();
         enhancer.setInterfaces(interfaces.toArray(new Class<?>[0]));
-        enhancer.setCallbackTypes(new Class[] {FastDispatcher.class, Interceptor.class} );
+        enhancer.setCallbackTypes(new Class[]{FastDispatcher.class, Interceptor.class});
         enhancer.setCallbackFilter(new InterceptorFilter(new PreparedStatementJavaProxy()));
         return enhancer.createClass();
     }
@@ -190,7 +196,7 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
 
         Enhancer enhancer = new Enhancer();
         enhancer.setInterfaces(interfaces.toArray(new Class<?>[0]));
-        enhancer.setCallbackTypes(new Class[] {FastDispatcher.class, Interceptor.class} );
+        enhancer.setCallbackTypes(new Class[]{FastDispatcher.class, Interceptor.class});
         enhancer.setCallbackFilter(new InterceptorFilter(new StatementJavaProxy()));
         return enhancer.createClass();
     }
@@ -201,7 +207,7 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
 
         Enhancer enhancer = new Enhancer();
         enhancer.setInterfaces(interfaces.toArray(new Class<?>[0]));
-        enhancer.setCallbackTypes(new Class[] {FastDispatcher.class, Interceptor.class} );
+        enhancer.setCallbackTypes(new Class[]{FastDispatcher.class, Interceptor.class});
         enhancer.setCallbackFilter(new InterceptorFilter(new CallableStatementJavaProxy()));
         return enhancer.createClass();
     }
@@ -212,10 +218,10 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
 
         Enhancer enhancer = new Enhancer();
         enhancer.setInterfaces(interfaces.toArray(new Class<?>[0]));
-        enhancer.setCallbackTypes(new Class[] {FastDispatcher.class, Interceptor.class} );
+        enhancer.setCallbackTypes(new Class[]{FastDispatcher.class, Interceptor.class});
         enhancer.setCallbackFilter(new InterceptorFilter(new ResultSetJavaProxy()));
         return enhancer.createClass();
-	}
+    }
 
     // ---------------------------------------------------------------
     //  CGLIB Classes
@@ -243,7 +249,7 @@ public class JdbcCglibProxyFactory implements JdbcProxyFactory {
 
         @Override
         public Object intercept(Object enhanced, Method method, Object[] args, MethodProxy fastProxy) throws Throwable {
-        	interceptor.proxy = enhanced;
+            interceptor.proxy = enhanced;
             return interceptor.invoke(interceptor, method, args);
         }
     }

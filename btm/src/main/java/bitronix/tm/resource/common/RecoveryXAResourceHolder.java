@@ -16,7 +16,8 @@
 package bitronix.tm.resource.common;
 
 import javax.transaction.xa.XAResource;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -39,7 +40,7 @@ public class RecoveryXAResourceHolder extends AbstractXAResourceHolder<RecoveryX
     }
 
     @Override
-    public Date getLastReleaseDate() {
+    public LocalDateTime getLastReleaseDate() {
         return null;
     }
 
@@ -55,7 +56,7 @@ public class RecoveryXAResourceHolder extends AbstractXAResourceHolder<RecoveryX
 
     @Override
     public List<RecoveryXAResourceHolder> getXAResourceHolders() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override

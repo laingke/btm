@@ -19,8 +19,9 @@ import bitronix.tm.resource.jdbc.PoolingDataSource;
 import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
 
 import java.sql.Connection;
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import static org.mockito.Mockito.*;
@@ -28,11 +29,13 @@ import static org.mockito.Mockito.*;
 public class ConnectionCustomizerTest {
     private ConnectionCustomizer customizer;
 
-    @Before public void setup(){
+    @BeforeEach
+    public void setup(){
         customizer = mock(ConnectionCustomizer.class);
     }
 
-    @Test public void testCustomizerCall() throws Exception{
+    @Test
+    public void testCustomizerCall() throws Exception{
         String name = "pds";
         PoolingDataSource pds = new PoolingDataSource();
         pds.setUniqueName(name);

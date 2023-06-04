@@ -37,8 +37,9 @@ public final class PropertyUtils {
      * Set a direct or indirect property (dotted property: prop1.prop2.prop3) on the target object. This method tries
      * to be smart in the way that intermediate properties currently set to null are set if it is possible to create
      * and set an object. Conversions from propertyValue to the proper destination type are performed when possible.
-     * @param target the target object on which to set the property.
-     * @param propertyName the name of the property to set.
+     *
+     * @param target        the target object on which to set the property.
+     * @param propertyName  the name of the property to set.
      * @param propertyValue the value of the property to set.
      * @throws PropertyException if an error happened while trying to set the property.
      */
@@ -50,18 +51,18 @@ public final class PropertyUtils {
         Object parentTarget = target;
         String parentName = null;
         int i = 0;
-        while (i < propertyNames.length -1) {
+        while (i < propertyNames.length - 1) {
             String name = propertyNames[i];
             Object result = callGetter(currentTarget, name);
             if (result == null) {
                 // try to instantiate the object & set it in place
                 Class<?> propertyType = getPropertyType(target, name);
                 try {
-                    result = propertyType.newInstance();
-                } catch (InstantiationException ex) {
+                    result = propertyType.getDeclaredConstructor().newInstance();
+                } catch (InstantiationException | IllegalAccessException ex) {
                     throw new PropertyException("cannot set property '" + propertyName + "' - '" + name + "' is null and cannot be auto-filled", ex);
-                } catch (IllegalAccessException ex) {
-                    throw new PropertyException("cannot set property '" + propertyName + "' - '" + name + "' is null and cannot be auto-filled", ex);
+                } catch (InvocationTargetException | NoSuchMethodException e) {
+                    e.printStackTrace();
                 }
                 callSetter(currentTarget, name, result);
             }
@@ -96,42 +97,43 @@ public final class PropertyUtils {
     /**
      * Build a map of direct javabeans properties of the target object. Only read/write properties (ie: those who have
      * both a getter and a setter) are returned.
+     *
      * @param target the target object from which to get properties names.
      * @return a Map of String with properties names as key and their values
      * @throws PropertyException if an error happened while trying to get a property.
      */
     public static Map<String, Object> getProperties(Object target) throws PropertyException {
-        Map<String, Object> properties = new HashMap<String, Object>();
+        Map<String, Object> properties = new HashMap<>();
         Class<?> clazz = target.getClass();
         Method[] methods = clazz.getMethods();
         for (Method method : methods) {
             String name = method.getName();
-            if (method.getModifiers() == Modifier.PUBLIC && method.getParameterTypes().length == 0 && (name.startsWith("get") || name.startsWith("is")) && containsSetterForGetter(clazz, method)) {
-                String propertyName;
-                if (name.startsWith("get")) {
-                    propertyName = Character.toLowerCase(name.charAt(3)) + name.substring(4);
-                } else if (name.startsWith("is")) {
-                    propertyName = Character.toLowerCase(name.charAt(2)) + name.substring(3);
+            boolean isExcepted = method.getModifiers() == Modifier.PUBLIC && method.getParameterTypes().length == 0
+                    && (name.startsWith("get") || name.startsWith("is")) && containsSetterForGetter(clazz, method);
+            if (!isExcepted) {
+                continue;
+            }
+            String propertyName;
+            if (name.startsWith("get")) {
+                propertyName = Character.toLowerCase(name.charAt(3)) + name.substring(4);
+            } else if (name.startsWith("is")) {
+                propertyName = Character.toLowerCase(name.charAt(2)) + name.substring(3);
+            } else {
+                throw new PropertyException("method '" + name + "' is not a getter, thereof no setter can be found");
+            }
+
+            try {
+                Object propertyValue = method.invoke(target);
+                if (propertyValue instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> propertiesContent = getNestedProperties(propertyName, (Map<String, Object>) propertyValue);
+                    properties.putAll(propertiesContent);
                 } else {
-                    throw new PropertyException("method '" + name + "' is not a getter, thereof no setter can be found");
+                    properties.put(propertyName, propertyValue);
                 }
-
-                try {
-                    Object propertyValue = method.invoke(target);
-                    if (propertyValue != null && propertyValue instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> propertiesContent = getNestedProperties(propertyName, (Map<String, Object>) propertyValue);
-                        properties.putAll(propertiesContent);
-                    } else {
-                        properties.put(propertyName, propertyValue);
-                    }
-                } catch (IllegalAccessException ex) {
-                    throw new PropertyException("cannot set property '" + propertyName + "' - '" + name + "' is null and cannot be auto-filled", ex);
-                } catch (InvocationTargetException ex) {
-                    throw new PropertyException("cannot set property '" + propertyName + "' - '" + name + "' is null and cannot be auto-filled", ex);
-                }
-
-            } // if
+            } catch (IllegalAccessException | InvocationTargetException ex) {
+                throw new PropertyException("cannot set property '" + propertyName + "' - '" + name + "' is null and cannot be auto-filled", ex);
+            }
         } // for
         return properties;
     }
@@ -159,7 +161,8 @@ public final class PropertyUtils {
 
     /**
      * Get a direct or indirect property (dotted property: prop1.prop2.prop3) on the target object.
-     * @param target the target object from which to get the property.
+     *
+     * @param target       the target object from which to get the property.
      * @param propertyName the name of the property to get.
      * @return the value of the specified property.
      * @throws PropertyException if an error happened while trying to get the property.
@@ -170,7 +173,7 @@ public final class PropertyUtils {
         for (int i = 0; i < propertyNames.length; i++) {
             String name = propertyNames[i];
             Object result = callGetter(currentTarget, name);
-            if (result == null && i < propertyNames.length -1) {
+            if (result == null && i < propertyNames.length - 1) {
                 throw new PropertyException("cannot get property '" + propertyName + "' - '" + name + "' is null");
             }
             currentTarget = result;
@@ -181,7 +184,8 @@ public final class PropertyUtils {
 
     /**
      * Set a {@link Map} of direct or indirect properties on the target object.
-     * @param target the target object on which to set the properties.
+     *
+     * @param target     the target object on which to set the properties.
      * @param properties a {@link Map} of String/Object pairs.
      * @throws PropertyException if an error happened while trying to set a property.
      */
@@ -195,12 +199,13 @@ public final class PropertyUtils {
 
     /**
      * Return a comma-separated String of r/w properties of the specified object.
+     *
      * @param obj the object to introspect.
      * @return a a comma-separated String of r/w properties.
      */
     public static String propertiesToString(Object obj) {
         StringBuilder sb = new StringBuilder();
-        Map<String, Object> properties = new TreeMap<String, Object>(getProperties(obj));
+        Map<String, Object> properties = new TreeMap<>(getProperties(obj));
         Iterator<String> it = properties.keySet().iterator();
         while (it.hasNext()) {
             String property = it.next();
@@ -218,8 +223,9 @@ public final class PropertyUtils {
     /**
      * Set a direct property on the target object. Conversions from propertyValue to the proper destination type
      * are performed whenever possible.
-     * @param target the target object on which to set the property.
-     * @param propertyName the name of the property to set.
+     *
+     * @param target        the target object on which to set the property.
+     * @param propertyName  the name of the property to set.
      * @param propertyValue the value of the property to set.
      * @throws PropertyException if an error happened while trying to set the property.
      */
@@ -241,7 +247,7 @@ public final class PropertyUtils {
     }
 
     private static Map<String, Object> getNestedProperties(String prefix, Map<String, Object> properties) {
-        Map<String, Object> result = new HashMap<String, Object>();
+        Map<String, Object> result = new HashMap<>();
         for (Map.Entry<String, Object> entry : properties.entrySet()) {
             String name = entry.getKey();
             String value = (String) entry.getValue();
@@ -255,37 +261,37 @@ public final class PropertyUtils {
             return value;
         }
 
-        if (    value.getClass() == boolean.class || value.getClass() == Boolean.class ||
+        if (value.getClass() == boolean.class || value.getClass() == Boolean.class ||
                 value.getClass() == byte.class || value.getClass() == Byte.class ||
                 value.getClass() == short.class || value.getClass() == Short.class ||
                 value.getClass() == int.class || value.getClass() == Integer.class ||
                 value.getClass() == long.class || value.getClass() == Long.class ||
                 value.getClass() == float.class || value.getClass() == Float.class ||
                 value.getClass() == double.class || value.getClass() == Double.class
-            ) {
+        ) {
             return value;
         }
 
-        if ((destinationClass == boolean.class || destinationClass == Boolean.class)  &&  value.getClass() == String.class) {
+        if ((destinationClass == boolean.class || destinationClass == Boolean.class) && value.getClass() == String.class) {
             return Boolean.valueOf((String) value);
         }
-        if ((destinationClass == byte.class || destinationClass == Byte.class)  &&  value.getClass() == String.class) {
-            return new Byte((String) value);
+        if ((destinationClass == byte.class || destinationClass == Byte.class) && value.getClass() == String.class) {
+            return Byte.parseByte((String) value);
         }
-        if ((destinationClass == short.class || destinationClass == Short.class)  &&  value.getClass() == String.class) {
-            return new Short((String) value);
+        if ((destinationClass == short.class || destinationClass == Short.class) && value.getClass() == String.class) {
+            return Short.parseShort((String) value);
         }
-        if ((destinationClass == int.class || destinationClass == Integer.class)  &&  value.getClass() == String.class) {
-            return new Integer((String) value);
+        if ((destinationClass == int.class || destinationClass == Integer.class) && value.getClass() == String.class) {
+            return Integer.parseInt((String) value);
         }
-        if ((destinationClass == long.class || destinationClass == Long.class)  &&  value.getClass() == String.class) {
-            return new Long((String) value);
+        if ((destinationClass == long.class || destinationClass == Long.class) && value.getClass() == String.class) {
+            return Long.parseLong((String) value);
         }
-        if ((destinationClass == float.class || destinationClass == Float.class)  &&  value.getClass() == String.class) {
-            return new Float((String) value);
+        if ((destinationClass == float.class || destinationClass == Float.class) && value.getClass() == String.class) {
+            return Float.parseFloat((String) value);
         }
-        if ((destinationClass == double.class || destinationClass == Double.class)  &&  value.getClass() == String.class) {
-            return new Double((String) value);
+        if ((destinationClass == double.class || destinationClass == Double.class) && value.getClass() == String.class) {
+            return Double.parseDouble((String) value);
         }
 
         throw new PropertyException("cannot convert values of type '" + value.getClass().getName() + "' into type '" + destinationClass + "'");

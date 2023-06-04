@@ -15,19 +15,11 @@
  */
 package bitronix.tm.mock.resource.jms;
 
+import jakarta.jms.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -42,7 +34,7 @@ public class MockConnectionFactory implements ConnectionFactory {
 			public Session answer(InvocationOnMock invocation) throws Throwable {
 				Session session = mock(Session.class);
 				MessageProducer producer = mock(MessageProducer.class);
-				when(session.createProducer((Destination) anyObject())).thenReturn(producer);
+				when(session.createProducer((Destination) any())).thenReturn(producer);
 				return session;
 			}
     	};
@@ -55,4 +47,24 @@ public class MockConnectionFactory implements ConnectionFactory {
     public Connection createConnection(String jndiName, String jndiName1) throws JMSException {
         return createConnection();
     }
+
+	@Override
+	public JMSContext createContext() {
+		return null;
+	}
+
+	@Override
+	public JMSContext createContext(String userName, String password) {
+		return null;
+	}
+
+	@Override
+	public JMSContext createContext(String userName, String password, int sessionMode) {
+		return null;
+	}
+
+	@Override
+	public JMSContext createContext(int sessionMode) {
+		return null;
+	}
 }

@@ -15,32 +15,17 @@
  */
 package bitronix.tm.resource.jdbc.proxy;
 
-import java.lang.reflect.Constructor;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Set;
-
-import javassist.CannotCompileException;
-import javassist.ClassClassPath;
-import javassist.ClassMap;
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtConstructor;
-import javassist.CtMethod;
-import javassist.CtNewConstructor;
-import javassist.CtNewMethod;
-import javassist.NotFoundException;
-
-import javax.sql.XAConnection;
-
 import bitronix.tm.resource.jdbc.JdbcPooledConnection;
 import bitronix.tm.resource.jdbc.LruStatementCache.CacheKey;
 import bitronix.tm.resource.jdbc.lrc.LrcXAResource;
 import bitronix.tm.utils.ClassLoaderUtils;
+import javassist.*;
+
+import javax.sql.XAConnection;
+import java.lang.reflect.Constructor;
+import java.sql.*;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * This class generates JDBC proxy classes using Javassist bytecode generated
@@ -82,7 +67,9 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
         classPool = null;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Connection getProxyConnection(JdbcPooledConnection jdbcPooledConnection, Connection connection) {
         try {
@@ -92,7 +79,9 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Statement getProxyStatement(JdbcPooledConnection jdbcPooledConnection, Statement statement) {
         try {
@@ -102,7 +91,9 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CallableStatement getProxyCallableStatement(JdbcPooledConnection jdbcPooledConnection, CallableStatement statement) {
         try {
@@ -112,7 +103,9 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public PreparedStatement getProxyPreparedStatement(JdbcPooledConnection jdbcPooledConnection, PreparedStatement statement, CacheKey cacheKey) {
         try {
@@ -122,23 +115,29 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
-	public ResultSet getProxyResultSet(Statement statement, ResultSet resultSet) {
+    public ResultSet getProxyResultSet(Statement statement, ResultSet resultSet) {
         try {
             return proxyResultSetConstructor.newInstance(statement, resultSet);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-	}
+    }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public XAConnection getProxyXaConnection(Connection connection) {
         return lrcProxyFactory.getProxyXaConnection(connection);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Connection getProxyConnection(LrcXAResource xaResource, Connection connection) {
         return lrcProxyFactory.getProxyConnection(xaResource, connection);
@@ -154,7 +153,7 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
     private void createProxyConnectionClass() {
         try {
             Class<Connection> proxyClass = generateProxyClass(Connection.class, ConnectionJavaProxy.class);
-            proxyConnectionConstructor = proxyClass.getConstructor(new Class<?>[] {JdbcPooledConnection.class, Connection.class} );
+            proxyConnectionConstructor = proxyClass.getConstructor(JdbcPooledConnection.class, Connection.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -166,7 +165,7 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
     private void createProxyStatementClass() {
         try {
             Class<Statement> proxyClass = generateProxyClass(Statement.class, StatementJavaProxy.class);
-            proxyStatementConstructor = proxyClass.getConstructor(new Class<?>[] {JdbcPooledConnection.class, Statement.class});
+            proxyStatementConstructor = proxyClass.getConstructor(JdbcPooledConnection.class, Statement.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -178,7 +177,7 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
     private void createProxyCallableStatementClass() {
         try {
             Class<CallableStatement> proxyClass = generateProxyClass(CallableStatement.class, CallableStatementJavaProxy.class);
-            proxyCallableStatementConstructor = proxyClass.getConstructor(new Class<?>[] {JdbcPooledConnection.class, CallableStatement.class});
+            proxyCallableStatementConstructor = proxyClass.getConstructor(JdbcPooledConnection.class, CallableStatement.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -190,7 +189,7 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
     private void createProxyPreparedStatementClass() {
         try {
             Class<PreparedStatement> proxyClass = generateProxyClass(PreparedStatement.class, PreparedStatementJavaProxy.class);
-            proxyPreparedStatementConstructor = proxyClass.getConstructor(new Class<?>[] {JdbcPooledConnection.class, PreparedStatement.class, CacheKey.class});
+            proxyPreparedStatementConstructor = proxyClass.getConstructor(JdbcPooledConnection.class, PreparedStatement.class, CacheKey.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -202,7 +201,7 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
     private void createProxyResultSetClass() {
         try {
             Class<ResultSet> proxyClass = generateProxyClass(ResultSet.class, ResultSetJavaProxy.class);
-            proxyResultSetConstructor = proxyClass.getConstructor(new Class<?>[] {Statement.class, ResultSet.class});
+            proxyResultSetConstructor = proxyClass.getConstructor(Statement.class, ResultSet.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -210,7 +209,7 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
 
     @SuppressWarnings("unchecked")
     private <T> Class<T> generateProxyClass(Class<T> primaryInterface, Class<?> superClass)
-        throws NotFoundException, CannotCompileException, NoSuchMethodException, SecurityException {
+            throws NotFoundException, CannotCompileException, NoSuchMethodException, SecurityException {
 
         // Make a new class that extends one of the JavaProxy classes (ie. superClass); use the name to XxxJavassistProxy instead of XxxJavaProxy
         String superClassName = superClass.getName();
@@ -224,12 +223,12 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
         }
 
         // Make a set of method signatures we inherit implementation for, so we don't generate delegates for these
-        Set<String> superSigs = new HashSet<String>();
+        Set<String> superSigs = new HashSet<>();
         for (CtMethod method : superClassCt.getMethods()) {
             superSigs.add(method.getName() + method.getSignature());
         }
 
-        Set<String> methods = new HashSet<String>();
+        Set<String> methods = new HashSet<>();
         Set<Class<?>> interfaces = ClassLoaderUtils.getAllInterfaces(primaryInterface);
         for (Class<?> intf : interfaces) {
             CtClass intfCt = classPool.getCtClass(intf.getName());
@@ -243,17 +242,18 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
                 CtMethod method = CtNewMethod.copy(intfMethod, targetCt, classMap);
                 // Ignore already added methods that come from other interfaces
                 if (methods.contains(intfMethod.getName() + intfMethod.getSignature())) {
-                	continue;
+                    continue;
                 }
 
                 methods.add(intfMethod.getName() + intfMethod.getSignature());
 
                 // Generate a method that simply invokes the same method on the delegate
                 StringBuilder call = new StringBuilder("{");
-                if ( method.getReturnType() != CtClass.voidType) {
+                if (method.getReturnType() != CtClass.voidType) {
                     call.append("return ");
                 }
-                call.append("((").append(primaryInterface.getName()).append(')'); // cast to primary interface
+                // cast to primary interface
+                call.append("((").append(primaryInterface.getName()).append(')');
                 call.append("delegate).");
                 call.append(method.getName()).append("($$);");
                 call.append('}');
@@ -262,6 +262,6 @@ public class JdbcJavassistProxyFactory implements JdbcProxyFactory {
             }
         }
 
-        return targetCt.toClass(ClassLoaderUtils.getClassLoader(), null);
+        return (Class<T>) targetCt.toClass(JdbcProxyFactory.class);
     }
 }

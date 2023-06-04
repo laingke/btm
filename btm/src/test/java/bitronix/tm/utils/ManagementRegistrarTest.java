@@ -16,9 +16,9 @@
 package bitronix.tm.utils;
 
 import bitronix.tm.TransactionManagerServices;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
@@ -27,8 +27,7 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Smoke test for ManagementRegistrar.
@@ -57,13 +56,13 @@ public class ManagementRegistrarTest {
     final String objectName = "bitronix.somename:type=TestBean";
     final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
 
-    @Before
+    @BeforeEach
     public void assertJMXDefaultsAreAsyncAndEnabled() throws Exception {
         assertFalse(TransactionManagerServices.getConfiguration().isDisableJmx());
         assertFalse(TransactionManagerServices.getConfiguration().isSynchronousJmxRegistration());
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         ManagementRegistrar.unregister(objectName);
         ManagementRegistrar.normalizeAndRunQueuedCommands();
@@ -87,13 +86,13 @@ public class ManagementRegistrarTest {
         assertEquals(beans.get(beans.size() - 1).getName(), mBeanServer.getAttribute(new ObjectName(objectName), "Name"));
     }
 
-    @Test(expected = InstanceNotFoundException.class)
+    @Test
     public void testCanUnregister() throws Exception {
         TestBean testBean = new TestBean("1");
         ManagementRegistrar.register(objectName, testBean);
         ManagementRegistrar.unregister(objectName);
         ManagementRegistrar.normalizeAndRunQueuedCommands();
 
-        mBeanServer.getAttribute(new ObjectName(objectName), "Name");
+        assertThrows(InstanceNotFoundException.class, () -> mBeanServer.getAttribute(new ObjectName(objectName), "Name"));
     }
 }

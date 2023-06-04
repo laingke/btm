@@ -18,12 +18,15 @@ package bitronix.tm.mock;
 import bitronix.tm.BitronixTransactionManager;
 import bitronix.tm.TransactionManagerServices;
 import bitronix.tm.resource.jdbc.PooledConnectionProxy;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.transaction.Transaction;
+import jakarta.transaction.Transaction;
 import java.sql.Connection;
 import java.util.ArrayList;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
@@ -32,6 +35,7 @@ import java.util.ArrayList;
 public class JdbcSharedConnectionTest extends AbstractMockJdbcTest {
     private final static Logger log = LoggerFactory.getLogger(NewJdbcProperUsageMockTest.class);
 
+    @Test
     public void testSharedConnectionMultithreaded() throws Exception {
         if (log.isDebugEnabled()) { log.debug("*** Starting testSharedConnectionMultithreaded: getting TM"); }
         final BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
@@ -44,21 +48,18 @@ public class JdbcSharedConnectionTest extends AbstractMockJdbcTest {
         final Transaction suspended = tm.suspend();
 
         final ArrayList<Connection> twoConnections = new ArrayList<Connection>();
-        Thread thread1 = new Thread() {
-            @Override
-        	public void run() {
-        		try {
-					tm.resume(suspended);
-			        if (log.isDebugEnabled()) { log.debug("*** getting connection from DS1"); }
-			        Connection connection = poolingDataSource1.getConnection();
-			        connection.createStatement();
-			        twoConnections.add(connection);
-				} catch (Exception e) {
-					e.printStackTrace();
-					fail(e.getMessage());
-				}
-        	}
-        };
+        Thread thread1 = new Thread(() -> {
+            try {
+                tm.resume(suspended);
+                if (log.isDebugEnabled()) { log.debug("*** getting connection from DS1"); }
+                Connection connection = poolingDataSource1.getConnection();
+                connection.createStatement();
+                twoConnections.add(connection);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail(e.getMessage());
+            }
+        });
         thread1.start();
         thread1.join();
 
@@ -87,6 +88,7 @@ public class JdbcSharedConnectionTest extends AbstractMockJdbcTest {
 
     }
 
+    @Test
     public void testUnSharedConnection() throws Exception {
         if (log.isDebugEnabled()) { log.debug("*** Starting testUnSharedConnection: getting TM"); }
         BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
@@ -114,6 +116,7 @@ public class JdbcSharedConnectionTest extends AbstractMockJdbcTest {
         tm.commit();
     }
 
+    @Test
     public void testSharedConnectionInLocalTransaction() throws Exception {
 
         if (log.isDebugEnabled()) { log.debug("*** Starting testSharedConnectionInLocalTransaction: getting connection from DS1"); }
@@ -132,6 +135,7 @@ public class JdbcSharedConnectionTest extends AbstractMockJdbcTest {
         connection2.close();
     }
 
+    @Test
     public void testUnSharedConnectionInLocalTransaction() throws Exception {
 
         if (log.isDebugEnabled()) { log.debug("*** Starting testUnSharedConnectionInLocalTransaction: getting connection from DS2"); }
@@ -150,6 +154,7 @@ public class JdbcSharedConnectionTest extends AbstractMockJdbcTest {
         connection2.close();
     }
 
+    @Test
     public void testSharedConnectionInGlobal() throws Exception {
         if (log.isDebugEnabled()) { log.debug("*** testSharedConnectionInGlobal: Starting getting TM"); }
         BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();

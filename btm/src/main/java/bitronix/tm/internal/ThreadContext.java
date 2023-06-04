@@ -20,6 +20,8 @@ import bitronix.tm.TransactionManagerServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+
 /**
  * Transactional context of a thread. It contains both the active transaction (if any) and all default parameters
  * that a transaction running on a thread must inherit.
@@ -28,17 +30,13 @@ import org.slf4j.LoggerFactory;
  */
 public class ThreadContext {
 
-    private final static Logger log = LoggerFactory.getLogger(ThreadContext.class);
+    private static final Logger log = LoggerFactory.getLogger(ThreadContext.class);
 
     private volatile BitronixTransaction transaction;
-    private volatile int timeout = TransactionManagerServices.getConfiguration().getDefaultTransactionTimeout();;
 
-    private static final ThreadLocal<ThreadContext> threadContext = new ThreadLocal<ThreadContext>() {
-        @Override
-        protected ThreadContext initialValue() {
-            return new ThreadContext();
-        }
-    };
+    private volatile Duration timeout = TransactionManagerServices.getConfiguration().getDefaultTransactionTimeout();
+
+    private static final ThreadLocal<ThreadContext> threadContext = ThreadLocal.withInitial(ThreadContext::new);
 
     /**
      * Private constructor.
@@ -74,9 +72,12 @@ public class ThreadContext {
      * @param transaction the transaction to link.
      */
     public void setTransaction(BitronixTransaction transaction) {
-        if (transaction == null)
+        if (transaction == null) {
             throw new IllegalArgumentException("transaction parameter cannot be null");
-        if (log.isDebugEnabled()) { log.debug("assigning <" + transaction + "> to <" + this + ">"); }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("assigning <{}> to <{}>", transaction, this);
+        }
         this.transaction = transaction;
     }
 
@@ -92,7 +93,7 @@ public class ThreadContext {
      *
      * @return this context's default timeout.
      */
-    public int getTimeout() {
+    public Duration getTimeout() {
         return timeout;
     }
 
@@ -103,14 +104,17 @@ public class ThreadContext {
      *
      * @param timeout the new default timeout value in seconds.
      */
-    public void setTimeout(int timeout) {
-        if (timeout == 0) {
-            int defaultValue = TransactionManagerServices.getConfiguration().getDefaultTransactionTimeout();
-            if (log.isDebugEnabled()) { log.debug("resetting default timeout of thread context to default value of " + defaultValue + "s"); }
+    public void setTimeout(Duration timeout) {
+        if (timeout == Duration.ZERO) {
+            Duration defaultValue = TransactionManagerServices.getConfiguration().getDefaultTransactionTimeout();
+            if (log.isDebugEnabled()) {
+                log.debug("resetting default timeout of thread context to default value of {}s", defaultValue);
+            }
             this.timeout = defaultValue;
-        }
-        else {
-            if (log.isDebugEnabled()) { log.debug("changing default timeout of thread context to " + timeout + "s"); }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("changing default timeout of thread context to {}s", timeout);
+            }
             this.timeout = timeout;
         }
     }

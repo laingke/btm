@@ -35,11 +35,13 @@ import bitronix.tm.resource.jdbc.PooledConnectionProxy;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
 import bitronix.tm.utils.Uid;
 import bitronix.tm.utils.UidGenerator;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.transaction.Status;
+import jakarta.transaction.Status;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 import java.io.File;
@@ -47,27 +49,26 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class RecovererTest extends TestCase {
+public class RecovererTest {
     private final static Logger log = LoggerFactory.getLogger(RecovererTest.class);
 
     private MockXAResource xaResource;
     private PoolingDataSource pds;
     private Journal journal;
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-        Iterator<String> it = ResourceRegistrar.getResourcesUniqueNames().iterator();
-        while (it.hasNext()) {
-            String name = it.next();
+        for (String name : ResourceRegistrar.getResourcesUniqueNames()) {
             ResourceRegistrar.unregister(ResourceRegistrar.get(name));
         }
 
@@ -95,7 +96,7 @@ public class RecovererTest extends TestCase {
         journal.open();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         if (TransactionManagerServices.isTransactionManagerRunning())
             TransactionManagerServices.getTransactionManager().shutdown();
@@ -113,6 +114,7 @@ public class RecovererTest extends TestCase {
      * them back.
      * @throws Exception
      */
+    @Test
     public void testRecoverPresumedAbort() throws Exception {
         byte[] gtrid = UidGenerator.generateUid().getArray();
 
@@ -132,6 +134,7 @@ public class RecovererTest extends TestCase {
      * them back.
      * @throws Exception
      */
+    @Test
     public void testIncrementalRecoverPresumedAbort() throws Exception {
         byte[] gtrid = UidGenerator.generateUid().getArray();
 
@@ -148,6 +151,7 @@ public class RecovererTest extends TestCase {
      * Create 3 XIDs on the resource that are in the journal -> recoverer commits them.
      * @throws Exception
      */
+    @Test
     public void testRecoverCommitting() throws Exception {
         Xid xid0 = new MockXid(0, UidGenerator.generateUid().getArray(), BitronixXid.FORMAT_ID);
         xaResource.addInDoubtXid(xid0);
@@ -172,6 +176,7 @@ public class RecovererTest extends TestCase {
      * Create 3 XIDs on the resource that are in the journal -> recoverer commits them.
      * @throws Exception
      */
+    @Test
     public void testIncrementalRecoverCommitting() throws Exception {
         Xid xid0 = new MockXid(0, UidGenerator.generateUid().getArray(), BitronixXid.FORMAT_ID);
         xaResource.addInDoubtXid(xid0);
@@ -191,6 +196,7 @@ public class RecovererTest extends TestCase {
         assertEquals(0, xaResource.recover(XAResource.TMSTARTRSCAN | XAResource.TMENDRSCAN).length);
     }
 
+    @Test
     public void testSkipInFlightRollback() throws Exception {
         BitronixTransactionManager btm = TransactionManagerServices.getTransactionManager();
 
@@ -222,6 +228,7 @@ public class RecovererTest extends TestCase {
         assertEquals(0, xaResource.recover(XAResource.TMSTARTRSCAN | XAResource.TMENDRSCAN).length);
     }
 
+    @Test
     public void testSkipInFlightCommit() throws Exception {
         BitronixTransactionManager btm = TransactionManagerServices.getTransactionManager();
 
@@ -256,6 +263,7 @@ public class RecovererTest extends TestCase {
         assertEquals(0, xaResource.recover(XAResource.TMSTARTRSCAN | XAResource.TMENDRSCAN).length);
     }
 
+    @Test
     public void testRecoverMissingResource() throws Exception {
         final Xid xid0 = new MockXid(0, UidGenerator.generateUid().getArray(), BitronixXid.FORMAT_ID);
         xaResource.addInDoubtXid(xid0);
@@ -305,6 +313,8 @@ public class RecovererTest extends TestCase {
     }
 
     volatile boolean listenerExecuted = false;
+
+    @Test
     public void testBackgroundRecovererSkippingInFlightTransactions() throws Exception {
         // change disk journal into mock journal
         Field field = TransactionManagerServices.class.getDeclaredField("journalRef");
@@ -347,23 +357,23 @@ public class RecovererTest extends TestCase {
             btm.shutdown();
         }
 
-        assertTrue("recoverer did not run between phases 1 and 2", listenerExecuted);
+        assertTrue(listenerExecuted, "recoverer did not run between phases 1 and 2");
 
         int committedCount = 0;
 
-        List events = EventRecorder.getOrderedEvents();
-        for (int i = 0; i < events.size(); i++) {
-            Event event = (Event) events.get(i);
+        List<? extends Event> events = EventRecorder.getOrderedEvents();
+        for (Event value : events) {
+            Event event = value;
             if (event instanceof JournalLogEvent) {
                 if (((JournalLogEvent) event).getStatus() == Status.STATUS_COMMITTED)
                     committedCount++;
             }
         }
 
-        assertEquals("TX has been committed more or less times than just once", 1, committedCount);
+        assertEquals(1, committedCount, "TX has been committed more or less times than just once");
     }
 
-
+    @Test
     public void testReentrance() throws Exception {
         log.debug("Start test RecovererTest.testReentrance()");
         final int THREAD_COUNT = 10;

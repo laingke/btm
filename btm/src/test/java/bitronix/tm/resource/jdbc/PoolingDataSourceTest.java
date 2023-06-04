@@ -1,15 +1,18 @@
 package bitronix.tm.resource.jdbc;
 
 import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Ludovic Orban
  */
-public class PoolingDataSourceTest extends TestCase {
+public class PoolingDataSourceTest {
 
+    @Test
     public void testInjectedXaFactory() throws Exception {
         PoolingDataSource pds = new PoolingDataSource();
         try {
@@ -28,18 +31,21 @@ public class PoolingDataSourceTest extends TestCase {
         }
     }
 
+    @Test
     public void testEffectiveConnectionTimeoutWhenSet() {
         PoolingDataSource pds = new PoolingDataSource();
         pds.setConnectionTestTimeout(10);
         assertEquals(10, pds.getEffectiveConnectionTestTimeout());
     }
 
+    @Test
     public void testEffectiveConnectionTimeoutWhenAcquisitionTimeoutSet() {
         PoolingDataSource pds = new PoolingDataSource();
         pds.setAcquisitionTimeout(10);
         assertEquals(10, pds.getEffectiveConnectionTestTimeout());
     }
 
+    @Test
     public void testEffectiveConnectionTimeoutIsMinimumValue() {
         PoolingDataSource pds = new PoolingDataSource();
 
@@ -52,6 +58,7 @@ public class PoolingDataSourceTest extends TestCase {
         assertEquals(15, pds.getEffectiveConnectionTestTimeout());
     }
 
+    @Test
     public void testDefaultEffectiveAcquisitionTimeout() {
         PoolingDataSource pds = new PoolingDataSource();
         assertEquals(30, pds.getEffectiveConnectionTestTimeout());

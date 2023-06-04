@@ -24,6 +24,7 @@ public class BitronixRuntimeException extends RuntimeException {
     public BitronixRuntimeException(String message, Throwable cause) {
         super(message, cause);
     }
+
     public BitronixRuntimeException(String message) {
         super(message);
     }

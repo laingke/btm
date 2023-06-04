@@ -15,8 +15,8 @@
  */
 package bitronix.tm;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Date;
 
 /**
  * {@link BitronixTransaction} Management interface.
@@ -26,8 +26,12 @@ import java.util.Date;
 public interface BitronixTransactionMBean {
 
     String getGtrid();
+
     String getStatusDescription();
+
     String getThreadName();
-    Date getStartDate();
+
+    LocalDateTime getStartDate();
+
     Collection<String> getEnlistedResourcesUniqueNames();
 }

@@ -37,16 +37,17 @@ import bitronix.tm.resource.jdbc.JdbcPooledConnection;
 import bitronix.tm.resource.jdbc.PooledConnectionProxy;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
 import bitronix.tm.resource.jdbc.lrc.LrcXADataSource;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.XAConnection;
-import javax.transaction.RollbackException;
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.UserTransaction;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
+import jakarta.transaction.UserTransaction;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import java.io.ByteArrayInputStream;
@@ -59,6 +60,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 /**
  *
  * @author Ludovic Orban
@@ -68,6 +71,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
     private final static Logger log = LoggerFactory.getLogger(NewJdbcProperUsageMockTest.class);
     private static final int LOOPS = 2;
 
+    @Test
     public void testSimpleWorkingCase() throws Exception {
         Thread.currentThread().setName("testSimpleWorkingCase");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -117,13 +121,14 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(XAResource.XA_OK, ((XAResourcePrepareEvent) orderedEvents.get(i++)).getReturnCode());
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testOrderedCommitResources() throws Exception {
         Thread.currentThread().setName("testOrderedCommitResources");
         poolingDataSource1.setTwoPcOrderingPosition(200);
@@ -159,7 +164,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         if (log.isDebugEnabled()) { log.debug("*** TX is done"); }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(17, orderedEvents.size());
@@ -179,16 +184,17 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         XAResourceCommitEvent commitEvent1 = (XAResourceCommitEvent) orderedEvents.get(i++);
-        assertTrue(prepareEvent2.getSource() == commitEvent1.getSource());
-        assertEquals(false, commitEvent1.isOnePhase());
+        assertSame(prepareEvent2.getSource(), commitEvent1.getSource());
+        assertFalse(commitEvent1.isOnePhase());
         XAResourceCommitEvent commitEvent2 = (XAResourceCommitEvent) orderedEvents.get(i++);
-        assertTrue(prepareEvent1.getSource() == commitEvent2.getSource());
-        assertEquals(false, commitEvent2.isOnePhase());
+        assertSame(prepareEvent1.getSource(), commitEvent2.getSource());
+        assertFalse(commitEvent2.isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testReversePhase2Order() throws Exception {
         Thread.currentThread().setName("testReversePhase2Order");
 
@@ -225,7 +231,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         if (log.isDebugEnabled()) { log.debug("*** TX is done"); }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(17, orderedEvents.size());
@@ -245,16 +251,17 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         XAResourceCommitEvent commitEvent1 = (XAResourceCommitEvent) orderedEvents.get(i++);
-        assertTrue(prepareEvent2.getSource() == commitEvent1.getSource());
-        assertEquals(false, commitEvent1.isOnePhase());
+        assertSame(prepareEvent2.getSource(), commitEvent1.getSource());
+        assertFalse(commitEvent1.isOnePhase());
         XAResourceCommitEvent commitEvent2 = (XAResourceCommitEvent) orderedEvents.get(i++);
-        assertTrue(prepareEvent1.getSource() == commitEvent2.getSource());
-        assertEquals(false, commitEvent2.isOnePhase());
+        assertSame(prepareEvent1.getSource(), commitEvent2.getSource());
+        assertFalse(commitEvent2.isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testLrc() throws Exception {
         Thread.currentThread().setName("testLrc");
 
@@ -302,7 +309,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         if (log.isDebugEnabled()) { log.debug("*** TX is done"); }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(12, orderedEvents.size());
@@ -316,11 +323,12 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(LocalCommitEvent.class, orderedEvents.get(i++).getClass());
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testStatementTimeout() throws Exception {
         Thread.currentThread().setName("testStatementTimeout");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -353,7 +361,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         if (log.isDebugEnabled()) { log.debug("*** TX is done"); }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(9, orderedEvents.size());
@@ -369,6 +377,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testCommitTimeout() throws Exception {
         Thread.currentThread().setName("testCommitTimeout");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -414,6 +423,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testGlobalAfterLocal() throws Exception {
         Thread.currentThread().setName("testGlobalAfterLocal");
 
@@ -475,14 +485,14 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(XAResource.XA_OK, ((XAResourcePrepareEvent) orderedEvents.get(i++)).getReturnCode());
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
-
+    @Test
     public void testDeferredReleaseAfterMarkedRollback() throws Exception {
         Thread.currentThread().setName("testDeferredReleaseAfterMarkedRollback");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -506,7 +516,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         if (log.isDebugEnabled()) { log.debug("*** TX is done"); }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(9, orderedEvents.size());
@@ -522,7 +532,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
-
+    @Test
     public void testRollingBackSynchronization() throws Exception {
         Thread.currentThread().setName("testRollingBackSynchronization");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -589,6 +599,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testSuspendResume() throws Exception {
         Thread.currentThread().setName("testSuspendResume");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -631,9 +642,9 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(XAResource.TMNOFLAGS, ((XAResourceStartEvent) orderedEvents.get(i++)).getFlag());
         assertEquals(XAResource.TMSUCCESS, ((XAResourceEndEvent) orderedEvents.get(i++)).getFlag());
         assertEquals(XAResource.TMSUCCESS, ((XAResourceEndEvent) orderedEvents.get(i++)).getFlag());
-        assertEquals(true, ((XAResourceIsSameRmEvent) orderedEvents.get(i++)).isSameRm());
+        assertTrue(((XAResourceIsSameRmEvent) orderedEvents.get(i++)).isSameRm());
         assertEquals(XAResource.TMJOIN, ((XAResourceStartEvent) orderedEvents.get(i++)).getFlag());
-        assertEquals(true, ((XAResourceIsSameRmEvent) orderedEvents.get(i++)).isSameRm());
+        assertTrue(((XAResourceIsSameRmEvent) orderedEvents.get(i++)).isSameRm());
         assertEquals(XAResource.TMJOIN, ((XAResourceStartEvent) orderedEvents.get(i++)).getFlag());
         assertEquals(XAResource.TMSUCCESS, ((XAResourceEndEvent) orderedEvents.get(i++)).getFlag());
         assertEquals(XAResource.TMSUCCESS, ((XAResourceEndEvent) orderedEvents.get(i++)).getFlag());
@@ -642,13 +653,14 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(XAResource.XA_OK, ((XAResourcePrepareEvent) orderedEvents.get(i++)).getReturnCode());
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testLooseWorkingCaseOutsideOutside() throws Exception {
         Thread.currentThread().setName("testLooseWorkingCaseOutsideOutside");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -675,7 +687,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         connection2.close();
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(17, orderedEvents.size());
@@ -692,13 +704,14 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(XAResource.XA_OK, ((XAResourcePrepareEvent) orderedEvents.get(i++)).getReturnCode());
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testLooseWorkingCaseOutsideInside() throws Exception {
         Thread.currentThread().setName("testLooseWorkingCaseOutsideInside");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -725,7 +738,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         if (log.isDebugEnabled()) { log.debug("*** TX is done"); }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(17, orderedEvents.size());
@@ -742,13 +755,14 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(XAResource.XA_OK, ((XAResourcePrepareEvent) orderedEvents.get(i++)).getReturnCode());
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testLooseWorkingCaseInsideOutside() throws Exception {
         Thread.currentThread().setName("testLooseWorkingCaseInsideOutside");
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
@@ -775,7 +789,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         connection2.close();
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(17, orderedEvents.size());
@@ -792,13 +806,14 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(XAResource.XA_OK, ((XAResourcePrepareEvent) orderedEvents.get(i++)).getReturnCode());
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
-        assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertFalse(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(DATASOURCE1_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testHeuristicCommitWorkingCase() throws Exception {
         Thread.currentThread().setName("testHeuristicCommitWorkingCase");
         BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
@@ -821,7 +836,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         tm.commit();
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(18, orderedEvents.size());
@@ -840,15 +855,15 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
 
         XAResourceCommitEvent event = ((XAResourceCommitEvent) orderedEvents.get(i++));
-        assertEquals(false, event.isOnePhase());
+        assertFalse(event.isOnePhase());
         if (event.getException() != null) {
             assertNotNull(orderedEvents.get(i++));
 
-            assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i)).isOnePhase());
+            assertFalse(((XAResourceCommitEvent) orderedEvents.get(i)).isOnePhase());
             assertNull(((XAResourceCommitEvent) orderedEvents.get(i++)).getException());
         }
         else {
-            assertEquals(false, ((XAResourceCommitEvent) orderedEvents.get(i)).isOnePhase());
+            assertFalse(((XAResourceCommitEvent) orderedEvents.get(i)).isOnePhase());
             assertNotNull(((XAResourceCommitEvent) orderedEvents.get(i++)).getException());
 
             assertNotNull(orderedEvents.get(i++));
@@ -859,6 +874,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
+    @Test
     public void testHeuristicRollbackWorkingCase() throws Exception {
         Thread.currentThread().setName("testHeuristicRollbackWorkingCase");
         BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
@@ -882,7 +898,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         tm.rollback();
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(14, orderedEvents.size());
@@ -912,7 +928,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         assertEquals(DATASOURCE2_NAME, ((ConnectionQueuedEvent) orderedEvents.get(i++)).getPooledConnectionImpl().getPoolingDataSource().getUniqueName());
     }
 
-
+    @Test
     public void testNonXaPool() throws Exception {
         Thread.currentThread().setName("testNonXaPool");
         for (int i=0; i<LOOPS ;i++) {
@@ -932,7 +948,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
 
         log.info(EventRecorder.dumpToString());
 
-        List events = EventRecorder.getOrderedEvents();
+        List<? extends Event> events = EventRecorder.getOrderedEvents();
 
         /* LOOPS * 9 events:
             JournalLogEvent ACTIVE
@@ -950,33 +966,33 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
             Event event;
 
             event = (Event) events.get(i++);
-            assertEquals("at " + i, JournalLogEvent.class, event.getClass());
+            assertEquals(JournalLogEvent.class, event.getClass(), "at " + i);
 
             event = (Event) events.get(i++);
-            assertEquals("at " + i, ConnectionDequeuedEvent.class, event.getClass());
+            assertEquals(ConnectionDequeuedEvent.class, event.getClass(), "at " + i);
 
             event = (Event) events.get(i++);
-            assertEquals("at " + i, XAResourceStartEvent.class, event.getClass());
+            assertEquals(XAResourceStartEvent.class, event.getClass(), "at " + i);
 
             event = (Event) events.get(i++);
-            assertEquals("at " + i, XAResourceEndEvent.class, event.getClass());
+            assertEquals(XAResourceEndEvent.class, event.getClass(), "at " + i);
 
             event = (Event) events.get(i++);
-            assertEquals("at " + i, JournalLogEvent.class, event.getClass());
+            assertEquals(JournalLogEvent.class, event.getClass(), "at " + i);
 
             event = (Event) events.get(i++);
-            assertEquals("at " + i, XAResourceRollbackEvent.class, event.getClass());
+            assertEquals(XAResourceRollbackEvent.class, event.getClass(), "at " + i);
 
             event = (Event) events.get(i++);
-            assertEquals("at " + i, JournalLogEvent.class, event.getClass());
+            assertEquals(JournalLogEvent.class, event.getClass(), "at " + i);
 
             event = (Event) events.get(i++);
-            assertEquals("at " + i, ConnectionQueuedEvent.class, event.getClass());
+            assertEquals(ConnectionQueuedEvent.class, event.getClass(), "at " + i);
         }
 
     }
 
-
+    @Test
     public void testDuplicateClose() throws Exception {
         Thread.currentThread().setName("testDuplicateClose");
         Field poolField = poolingDataSource1.getClass().getDeclaredField("pool");
@@ -1014,6 +1030,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         if (log.isDebugEnabled()) { log.debug(" *** done"); }
     }
 
+    @Test
     public void testPoolBoundsWithLooseEnlistment() throws Exception {
         Thread.currentThread().setName("testPoolBoundsWithLooseEnlistment");
         ArrayList<LooseTransactionThread> list = new ArrayList<LooseTransactionThread>();
@@ -1024,10 +1041,9 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
             t.start();
         }
 
-        for (int i = 0; i < list.size(); i++) {
-            LooseTransactionThread thread = list.get(i);
+        for (LooseTransactionThread thread : list) {
             thread.join(5000);
-            if (!thread.isSuccesful())
+            if (!thread.isSuccessful())
                 log.info("thread " + thread.getNumber() + " failed");
         }
 
@@ -1036,7 +1052,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
 
         LooseTransactionThread thread = new LooseTransactionThread(-1, poolingDataSource1);
         thread.run();
-        assertTrue(thread.isSuccesful());
+        assertTrue(thread.isSuccessful());
     }
 
     static class LooseTransactionThread extends Thread {
@@ -1097,12 +1113,13 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
             return number;
         }
 
-        public boolean isSuccesful() {
+        public boolean isSuccessful() {
             return succesful;
         }
 
     }
 
+    @Test
     public void testNonEnlistingMethodInTxContext() throws Exception {
         Thread.currentThread().setName("testNonEnlistingMethodInTxContext");
         BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
@@ -1118,6 +1135,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         tm.shutdown();
     }
 
+    @Test
     public void testAutoCommitFalseWhenEnlisted() throws Exception {
         Thread.currentThread().setName("testAutoCommitFalseWhenEnlisted");
         BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
@@ -1134,6 +1152,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         tm.shutdown();
     }
 
+    @Test
     public void testAutoCommitTrueWhenEnlistedButSuspended() throws Exception {
         Thread.currentThread().setName("testAutoCommitTrueWhenEnlistedButSuspended");
         BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
@@ -1156,6 +1175,7 @@ public class NewJdbcProperUsageMockTest extends AbstractMockJdbcTest {
         tm.shutdown();
     }
 
+    @Test
     public void testSerialization() throws Exception {
         Thread.currentThread().setName("testSerialization");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

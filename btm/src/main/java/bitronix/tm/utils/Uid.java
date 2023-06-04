@@ -18,7 +18,7 @@ package bitronix.tm.utils;
 import java.util.Arrays;
 
 /**
- * <p>A constant UID byte array container optimized for use with hashed collections.</p>
+ * <p>a constant uid byte array container optimized for use with hashed collections.</p>
  *
  * @author Ludovic Orban
  */
@@ -41,8 +41,9 @@ public final class Uid {
 
     public byte[] extractServerId() {
         int serverIdLength = array.length - 4 - 8; // - sequence - timestamp
-        if (serverIdLength < 1)
-            return null;
+        if (serverIdLength < 1) {
+            return new byte[0];
+        }
 
         byte[] result = new byte[serverIdLength];
         System.arraycopy(array, 0, result, 0, serverIdLength);
@@ -58,17 +59,16 @@ public final class Uid {
     }
 
     public int length() {
-    	return array.length;
+        return array.length;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Uid) {
-            Uid otherUid = (Uid) obj;
-
+        if (obj instanceof Uid otherUid) {
             // optimizes performance a bit
-            if (hashCodeValue != otherUid.hashCodeValue)
+            if (hashCodeValue != otherUid.hashCodeValue) {
                 return false;
+            }
 
             return Arrays.equals(array, otherUid.array);
         }
@@ -87,6 +87,7 @@ public final class Uid {
 
     /**
      * Compute a UID byte array hashcode value.
+     *
      * @param uid the byte array used for hashcode computation.
      * @return a constant hash value for the specified uid.
      */
@@ -109,6 +110,7 @@ public final class Uid {
 
     /**
      * Decode a UID byte array into a (somewhat) human-readable hex string.
+     *
      * @param uid the uid to decode.
      * @return the resulting printable string.
      */
@@ -116,8 +118,8 @@ public final class Uid {
         char[] hexChars = new char[uid.length * 2];
         int c = 0;
         int v;
-        for (int i = 0; i < uid.length; i++) {
-            v = uid[i] & 0xFF;
+        for (byte b : uid) {
+            v = b & 0xFF;
             hexChars[c++] = HEX[v >> 4];
             hexChars[c++] = HEX[v & 0xF];
         }

@@ -58,28 +58,30 @@ public class Encoder {
     }
 
     public static long bytesToLong(byte[] bytes, int pos) {
-        if (bytes.length + pos < 8)
+        if (bytes.length + pos < 8) {
             throw new IllegalArgumentException("a long can only be decoded from 8 bytes of an array (got a " + bytes.length + " byte(s) array, must start at position " + pos + ")");
+        }
 
         long result = 0;
 
-        for(int i=0; i < 8 ;i++) {
-           result <<= 8;
-           result ^= (long) bytes[i + pos] & 0xFF;
+        for (int i = 0; i < 8; i++) {
+            result <<= 8;
+            result ^= (long) bytes[i + pos] & 0xFF;
         }
 
         return result;
     }
 
     public static int bytesToInt(byte[] bytes, int pos) {
-        if (bytes.length + pos < 4)
+        if (bytes.length + pos < 4) {
             throw new IllegalArgumentException("an integer can only be decoded from 4 bytes of an array (got a " + bytes.length + " byte(s) array, must start at position " + pos + ")");
+        }
 
         int result = 0;
 
-        for(int i=0; i < 4 ;i++) {
-           result <<= 8;
-           result ^= (int) bytes[i + pos] & 0xFF;
+        for (int i = 0; i < 4; i++) {
+            result <<= 8;
+            result ^= (int) bytes[i + pos] & 0xFF;
         }
 
         return result;

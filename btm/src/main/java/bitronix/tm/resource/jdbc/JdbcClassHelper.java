@@ -25,24 +25,26 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class JdbcClassHelper {
 
-    private final static Logger log = LoggerFactory.getLogger(JdbcClassHelper.class);
+    private static final Logger log = LoggerFactory.getLogger(JdbcClassHelper.class);
 
-    private final static int DETECTION_TIMEOUT = 5; // seconds
+    private static final int DETECTION_TIMEOUT = 5; // seconds
 
-	private static final Map<Class<Connection>, Integer> connectionClassVersions = new ConcurrentHashMap<Class<Connection>, Integer>();
-	private static final Map<Class<? extends Connection>, Method> isValidMethods = new ConcurrentHashMap<Class<? extends Connection>, Method>();
+    private static final Map<Class<Connection>, Integer> connectionClassVersions = new ConcurrentHashMap<>();
+    private static final Map<Class<? extends Connection>, Method> isValidMethods = new ConcurrentHashMap<>();
 
-	public static int detectJdbcVersion(Connection connection) {
-		@SuppressWarnings("unchecked")
-		Class<Connection> connectionClass = (Class<Connection>) connection.getClass();
+    public static int detectJdbcVersion(Connection connection) {
+        @SuppressWarnings("unchecked")
+        Class<Connection> connectionClass = (Class<Connection>) connection.getClass();
 
-		Integer jdbcVersionDetected = connectionClassVersions.get(connectionClass);
-        if (jdbcVersionDetected != null)
+        Integer jdbcVersionDetected = connectionClassVersions.get(connectionClass);
+        if (jdbcVersionDetected != null) {
             return jdbcVersionDetected;
+        }
 
         try {
-            Method isValidMethod = connectionClass.getMethod("isValid", new Class[]{Integer.TYPE});
-            isValidMethod.invoke(connection, new Object[] {new Integer(DETECTION_TIMEOUT)}); // test invoke
+            Method isValidMethod = connectionClass.getMethod("isValid", Integer.TYPE);
+            // test invoke
+            isValidMethod.invoke(connection, DETECTION_TIMEOUT);
             jdbcVersionDetected = 4;
             isValidMethods.put(connectionClass, isValidMethod);
         } catch (Exception ex) {
@@ -53,15 +55,17 @@ public class JdbcClassHelper {
         }
 
         connectionClassVersions.put(connectionClass, jdbcVersionDetected);
-        if (log.isDebugEnabled()) { log.debug("detected JDBC connection class '" + connectionClass + "' is version " + jdbcVersionDetected + " type"); }
+        if (log.isDebugEnabled()) {
+            log.debug("detected JDBC connection class '" + connectionClass + "' is version " + jdbcVersionDetected + " type");
+        }
 
         return jdbcVersionDetected;
-	}
+    }
 
-	public static Method getIsValidMethod(Connection connection) {
-		detectJdbcVersion(connection);
-		return isValidMethods.get(connection.getClass());
-	}
+    public static Method getIsValidMethod(Connection connection) {
+        detectJdbcVersion(connection);
+        return isValidMethods.get(connection.getClass());
+    }
 
 
 }

@@ -18,20 +18,23 @@ package bitronix.tm.resource.common;
 import bitronix.tm.internal.XAResourceHolderState;
 import bitronix.tm.utils.Uid;
 import bitronix.tm.utils.UidGenerator;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import javax.transaction.xa.XAResource;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class AbstractXAResourceHolderTest extends TestCase {
+public class AbstractXAResourceHolderTest {
 
+    @Test
     public void testStatesForGtridIterationOrder() throws Exception {
         final ResourceBean resourceBean = new ResourceBean() {
         };
@@ -62,7 +65,7 @@ public class AbstractXAResourceHolderTest extends TestCase {
             }
 
             @Override
-            public Date getLastReleaseDate() {
+            public LocalDateTime getLastReleaseDate() {
                 return null;
             }
         };
@@ -78,9 +81,8 @@ public class AbstractXAResourceHolderTest extends TestCase {
         xaResourceHolder.putXAResourceHolderState(UidGenerator.generateXid(gtrid), state3);
 
 
-        Map statesForGtrid = xaResourceHolder.getXAResourceHolderStatesForGtrid(gtrid);
-        Iterator statesForGtridIt = statesForGtrid.values().iterator();
-
+        Map<Uid, XAResourceHolderState> statesForGtrid = xaResourceHolder.getXAResourceHolderStatesForGtrid(gtrid);
+        Iterator<XAResourceHolderState> statesForGtridIt = statesForGtrid.values().iterator();
 
         assertTrue(statesForGtridIt.hasNext());
         assertSame(state1, statesForGtridIt.next());

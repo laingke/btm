@@ -22,19 +22,19 @@ import bitronix.tm.mock.resource.MockJournal;
 import bitronix.tm.mock.resource.jms.MockXAConnectionFactory;
 import bitronix.tm.resource.ResourceRegistrar;
 import bitronix.tm.resource.jms.PoolingConnectionFactory;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.util.Iterator;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- *
  * @author Ludovic Orban
  */
-public abstract class AbstractMockJmsTest extends TestCase {
+public abstract class AbstractMockJmsTest {
 
     private final static Logger log = LoggerFactory.getLogger(AbstractMockJmsTest.class);
 
@@ -44,11 +44,9 @@ public abstract class AbstractMockJmsTest extends TestCase {
     protected static final String CONNECTION_FACTORY1_NAME = "pcf1";
     protected static final String CONNECTION_FACTORY2_NAME = "pcf2";
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-        Iterator<String> it = ResourceRegistrar.getResourcesUniqueNames().iterator();
-        while (it.hasNext()) {
-            String name = it.next();
+        for (String name : ResourceRegistrar.getResourcesUniqueNames()) {
             ResourceRegistrar.unregister(ResourceRegistrar.get(name));
         }
 
@@ -75,7 +73,7 @@ public abstract class AbstractMockJmsTest extends TestCase {
         AtomicReference<Journal> journalRef = (AtomicReference<Journal>) field.get(TransactionManagerServices.class);
         journalRef.set(new MockJournal());
 
-        TransactionManagerServices.getConfiguration().setGracefulShutdownInterval(2);
+        TransactionManagerServices.getConfiguration().setGracefulShutdownInterval(Duration.ofSeconds(2L));
 
         // start TM
         TransactionManagerServices.getTransactionManager();
@@ -84,10 +82,12 @@ public abstract class AbstractMockJmsTest extends TestCase {
         EventRecorder.clear();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         try {
-            if (log.isDebugEnabled()) { log.debug("*** tearDown rollback"); }
+            if (log.isDebugEnabled()) {
+                log.debug("*** tearDown rollback");
+            }
             TransactionManagerServices.getTransactionManager().rollback();
         } catch (Exception ex) {
             // ignore

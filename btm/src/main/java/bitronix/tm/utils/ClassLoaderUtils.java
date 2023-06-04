@@ -19,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -28,11 +27,11 @@ import java.util.Set;
  */
 public class ClassLoaderUtils {
 
-    private final static Logger log = LoggerFactory.getLogger(ClassLoaderUtils.class);
+    private static final Logger log = LoggerFactory.getLogger(ClassLoaderUtils.class);
 
     public static Set<Class<?>> getAllInterfaces(Class<?> clazz) {
-        Set<Class<?>> interfaces = new HashSet<Class<?>>();
-        for (Class<?> intf : Arrays.asList(clazz.getInterfaces())) {
+        Set<Class<?>> interfaces = new HashSet<>();
+        for (Class<?> intf : clazz.getInterfaces()) {
             if (intf.getInterfaces().length > 0) {
                 interfaces.addAll(getAllInterfaces(intf));
             }
@@ -51,6 +50,7 @@ public class ClassLoaderUtils {
 
     /**
      * Get the class loader which can be used to generate proxies without leaking memory.
+     *
      * @return the class loader which can be used to generate proxies without leaking memory.
      */
     public static ClassLoader getClassLoader() {
@@ -63,17 +63,20 @@ public class ClassLoaderUtils {
 
     /**
      * Load a class by name. Tries the current thread's context loader then falls back to {@link Class#forName(String)}.
+     *
      * @param className name of the class to load.
      * @return the loaded class.
      * @throws ClassNotFoundException if the class cannot be found in the classpath.
      */
-    public static Class loadClass(String className) throws ClassNotFoundException {
+    public static Class<?> loadClass(String className) throws ClassNotFoundException {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl != null) {
             try {
                 return new CascadingClassLoader(cl).loadClass(className);
             } catch (ClassNotFoundException ex) {
-                if (log.isDebugEnabled()) { log.debug("context classloader could not find class '" + className + "', trying Class.forName() instead"); }
+                if (log.isDebugEnabled()) {
+                    log.debug("context classloader could not find class '{}', trying Class.forName() instead", className);
+                }
             }
         }
 
@@ -83,13 +86,15 @@ public class ClassLoaderUtils {
     /**
      * Load a resource from the classpath. Tries the current thread's context loader then falls back to
      * {@link ClassLoader#getResourceAsStream(String)} using this class' classloader.
+     *
      * @param resourceName the resource name to load.
      * @return a {@link java.io.InputStream} if the resource could be found, null otherwise.
      */
     public static InputStream getResourceAsStream(String resourceName) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        if (cl != null)
+        if (cl != null) {
             return cl.getResourceAsStream(resourceName);
+        }
 
         return ClassLoaderUtils.class.getClassLoader().getResourceAsStream(resourceName);
     }
@@ -106,8 +111,7 @@ public class ClassLoaderUtils {
         protected Class<?> findClass(String name) throws ClassNotFoundException {
             try {
                 return contextLoader.loadClass(name);
-            }
-            catch (ClassNotFoundException cnfe) {
+            } catch (ClassNotFoundException cnfe) {
                 return CascadingClassLoader.class.getClassLoader().loadClass(name);
             }
         }

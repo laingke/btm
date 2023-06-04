@@ -17,16 +17,19 @@ package bitronix.tm;
 
 import bitronix.tm.utils.DefaultExceptionAnalyzer;
 import bitronix.tm.utils.ExceptionAnalyzer;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import javax.transaction.xa.XAException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class ExceptionAnalyzerTest extends TestCase {
+public class ExceptionAnalyzerTest {
 
+    @Test
     public void testExceptionAnalyzer() throws Exception {
         assertEquals(DefaultExceptionAnalyzer.class, TransactionManagerServices.getExceptionAnalyzer().getClass());
 

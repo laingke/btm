@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class JavaProxyBase<T> implements InvocationHandler {
 
-    private final static Map<Method, String> methodKeyMap = new ConcurrentHashMap<Method, String>();
+    private static final Map<Method, String> methodKeyMap = new ConcurrentHashMap<>();
 
     protected Object proxy;
 
@@ -37,16 +37,16 @@ public abstract class JavaProxyBase<T> implements InvocationHandler {
     protected abstract Map<String, Method> getMethodMap();
 
     @SuppressWarnings("unchecked")
-	protected T getProxy() {
+    protected T getProxy() {
         return (T) proxy;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-    	if (Proxy.isProxyClass(proxy.getClass())) {
-    		this.proxy = (T) proxy;
-    	}
+        if (Proxy.isProxyClass(proxy.getClass())) {
+            this.proxy = (T) proxy;
+        }
 
         try {
             Method ourMethod = getMethodMap().get(getMethodKey(method));
@@ -55,14 +55,13 @@ public abstract class JavaProxyBase<T> implements InvocationHandler {
             }
 
             return method.invoke(delegate, args);
-        }
-        catch (InvocationTargetException ite) {
+        } catch (InvocationTargetException ite) {
             throw ite.getTargetException();
         }
     }
 
     protected static Map<String, Method> createMethodMap(Class<?> clazz) {
-        HashMap<String, Method> selfMethodMap = new HashMap<String, Method>();
+        HashMap<String, Method> selfMethodMap = new HashMap<>();
         for (Method method : clazz.getDeclaredMethods()) {
             if ((method.getModifiers() & Method.PUBLIC) == Method.PUBLIC) {
                 selfMethodMap.put(getMethodKey(method), method);
@@ -79,7 +78,7 @@ public abstract class JavaProxyBase<T> implements InvocationHandler {
 
         StringBuilder sb = new StringBuilder();
         sb.append(method.getReturnType().getName())
-          .append(method.getName());
+                .append(method.getName());
         for (Class<?> type : method.getParameterTypes()) {
             sb.append(type.getName());
         }
@@ -92,11 +91,7 @@ public abstract class JavaProxyBase<T> implements InvocationHandler {
         try {
             Method isWrapperForMethod = obj.getClass().getMethod("isWrapperFor", Class.class);
             return (Boolean) isWrapperForMethod.invoke(obj, param);
-        } catch (NoSuchMethodException ex) {
-            throw new UnsupportedOperationException("isWrapperFor is not supported", ex);
-        } catch (IllegalAccessException ex) {
-            throw new UnsupportedOperationException("isWrapperFor is not supported", ex);
-        } catch (InvocationTargetException ex) {
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
             throw new UnsupportedOperationException("isWrapperFor is not supported", ex);
         }
     }
@@ -106,11 +101,7 @@ public abstract class JavaProxyBase<T> implements InvocationHandler {
         try {
             Method unwrapMethod = obj.getClass().getMethod("unwrap", Class.class);
             return (T) unwrapMethod.invoke(obj, param);
-        } catch (NoSuchMethodException ex) {
-            throw new UnsupportedOperationException("unwrap is not supported", ex);
-        } catch (IllegalAccessException ex) {
-            throw new UnsupportedOperationException("unwrap is not supported", ex);
-        } catch (InvocationTargetException ex) {
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
             throw new UnsupportedOperationException("unwrap is not supported", ex);
         }
     }

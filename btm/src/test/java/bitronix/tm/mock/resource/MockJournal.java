@@ -21,8 +21,8 @@ import bitronix.tm.journal.TransactionLogRecord;
 import bitronix.tm.mock.events.EventRecorder;
 import bitronix.tm.mock.events.JournalLogEvent;
 import bitronix.tm.utils.Uid;
+import jakarta.transaction.Status;
 
-import javax.transaction.Status;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- *
  * @author Ludovic Orban
  */
 public class MockJournal implements Journal {
@@ -41,6 +40,7 @@ public class MockJournal implements Journal {
         return EventRecorder.getEventRecorder(this);
     }
 
+    @Override
     public void log(int status, Uid gtrid, Set<String> uniqueNames) throws IOException {
         TransactionLogRecord record = new TransactionLogRecord(status, gtrid, uniqueNames);
         if (status == Status.STATUS_COMMITTING) {
@@ -52,17 +52,21 @@ public class MockJournal implements Journal {
         getEventRecorder().addEvent(new JournalLogEvent(this, status, gtrid, uniqueNames));
     }
 
+    @Override
     public void open() throws IOException {
         danglingRecords = new HashMap<Uid, JournalRecord>();
     }
 
+    @Override
     public void close() throws IOException {
         danglingRecords = null;
     }
 
+    @Override
     public void force() throws IOException {
     }
 
+    @Override
     public Map<Uid, JournalRecord> collectDanglingRecords() throws IOException {
         return danglingRecords;
     }
@@ -71,6 +75,7 @@ public class MockJournal implements Journal {
         return danglingRecords.values().iterator();
     }
 
+    @Override
     public void shutdown() {
     }
 }

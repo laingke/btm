@@ -45,22 +45,23 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class TransactionManagerServices {
 
-    private final static Logger log = LoggerFactory.getLogger(TransactionManagerServices.class);
+    private static final Logger log = LoggerFactory.getLogger(TransactionManagerServices.class);
 
     private static final Lock transactionManagerLock = new ReentrantLock();
     private static volatile BitronixTransactionManager transactionManager;
 
-    private static final AtomicReference<BitronixTransactionSynchronizationRegistry> transactionSynchronizationRegistryRef = new AtomicReference<BitronixTransactionSynchronizationRegistry>();
-    private static final AtomicReference<Configuration> configurationRef = new AtomicReference<Configuration>();
-    private static final AtomicReference<Journal> journalRef = new AtomicReference<Journal>();
-    private static final AtomicReference<TaskScheduler> taskSchedulerRef = new AtomicReference<TaskScheduler>();
-    private static final AtomicReference<ResourceLoader> resourceLoaderRef = new AtomicReference<ResourceLoader>();
-    private static final AtomicReference<Recoverer> recovererRef = new AtomicReference<Recoverer>();
-    private static final AtomicReference<Executor> executorRef = new AtomicReference<Executor>();
-    private static final AtomicReference<ExceptionAnalyzer> exceptionAnalyzerRef = new AtomicReference<ExceptionAnalyzer>();
+    private static final AtomicReference<BitronixTransactionSynchronizationRegistry> transactionSynchronizationRegistryRef = new AtomicReference<>();
+    private static final AtomicReference<Configuration> configurationRef = new AtomicReference<>();
+    private static final AtomicReference<Journal> journalRef = new AtomicReference<>();
+    private static final AtomicReference<TaskScheduler> taskSchedulerRef = new AtomicReference<>();
+    private static final AtomicReference<ResourceLoader> resourceLoaderRef = new AtomicReference<>();
+    private static final AtomicReference<Recoverer> recovererRef = new AtomicReference<>();
+    private static final AtomicReference<Executor> executorRef = new AtomicReference<>();
+    private static final AtomicReference<ExceptionAnalyzer> exceptionAnalyzerRef = new AtomicReference<>();
 
     /**
      * Create an initialized transaction manager.
+     *
      * @return the transaction manager.
      */
     public static BitronixTransactionManager getTransactionManager() {
@@ -77,6 +78,7 @@ public class TransactionManagerServices {
 
     /**
      * Create the JTA 1.1 TransactionSynchronizationRegistry.
+     *
      * @return the TransactionSynchronizationRegistry.
      */
     public static BitronixTransactionSynchronizationRegistry getTransactionSynchronizationRegistry() {
@@ -92,6 +94,7 @@ public class TransactionManagerServices {
 
     /**
      * Create the configuration of all the components of the transaction manager.
+     *
      * @return the global configuration.
      */
     public static Configuration getConfiguration() {
@@ -107,6 +110,7 @@ public class TransactionManagerServices {
 
     /**
      * Create the transactions journal.
+     *
      * @return the transactions journal.
      */
     public static Journal getJournal() {
@@ -120,12 +124,14 @@ public class TransactionManagerServices {
             } else {
                 try {
                     Class<?> clazz = ClassLoaderUtils.loadClass(configuredJournal);
-                    journal = (Journal) clazz.newInstance();
+                    journal = (Journal) clazz.getDeclaredConstructor().newInstance();
                 } catch (Exception ex) {
                     throw new InitializationException("invalid journal implementation '" + configuredJournal + "'", ex);
                 }
             }
-            if (log.isDebugEnabled()) { log.debug("using journal " + configuredJournal); }
+            if (log.isDebugEnabled()) {
+                log.debug("using journal {}", configuredJournal);
+            }
 
             if (!journalRef.compareAndSet(null, journal)) {
                 journal = journalRef.get();
@@ -136,6 +142,7 @@ public class TransactionManagerServices {
 
     /**
      * Create the task scheduler.
+     *
      * @return the task scheduler.
      */
     public static TaskScheduler getTaskScheduler() {
@@ -153,6 +160,7 @@ public class TransactionManagerServices {
 
     /**
      * Create the resource loader.
+     *
      * @return the resource loader.
      */
     public static ResourceLoader getResourceLoader() {
@@ -162,12 +170,13 @@ public class TransactionManagerServices {
             if (!resourceLoaderRef.compareAndSet(null, resourceLoader)) {
                 resourceLoader = resourceLoaderRef.get();
             }
-        }        
+        }
         return resourceLoader;
     }
 
     /**
      * Create the transaction recoverer.
+     *
      * @return the transaction recoverer.
      */
     public static Recoverer getRecoverer() {
@@ -183,16 +192,21 @@ public class TransactionManagerServices {
 
     /**
      * Create the 2PC executor.
+     *
      * @return the 2PC executor.
      */
     public static Executor getExecutor() {
         Executor executor = executorRef.get();
         if (executor == null) {
             if (getConfiguration().isAsynchronous2Pc()) {
-                if (log.isDebugEnabled()) { log.debug("using AsyncExecutor"); }
+                if (log.isDebugEnabled()) {
+                    log.debug("using AsyncExecutor");
+                }
                 executor = new AsyncExecutor();
             } else {
-                if (log.isDebugEnabled()) { log.debug("using SyncExecutor"); }
+                if (log.isDebugEnabled()) {
+                    log.debug("using SyncExecutor");
+                }
                 executor = new SyncExecutor();
             }
             if (!executorRef.compareAndSet(null, executor)) {
@@ -205,16 +219,17 @@ public class TransactionManagerServices {
 
     /**
      * Create the exception analyzer.
+     *
      * @return the exception analyzer.
      */
-   public static ExceptionAnalyzer getExceptionAnalyzer() {
+    public static ExceptionAnalyzer getExceptionAnalyzer() {
         ExceptionAnalyzer analyzer = exceptionAnalyzerRef.get();
         if (analyzer == null) {
             String exceptionAnalyzerName = getConfiguration().getExceptionAnalyzer();
             analyzer = new DefaultExceptionAnalyzer();
             if (exceptionAnalyzerName != null) {
                 try {
-                    analyzer = (ExceptionAnalyzer) ClassLoaderUtils.loadClass(exceptionAnalyzerName).newInstance();
+                    analyzer = (ExceptionAnalyzer) ClassLoaderUtils.loadClass(exceptionAnalyzerName).getDeclaredConstructor().newInstance();
                 } catch (Exception ex) {
                     log.warn("failed to initialize custom exception analyzer, using default one instead", ex);
                 }
@@ -229,6 +244,7 @@ public class TransactionManagerServices {
 
     /**
      * Check if the transaction manager has started.
+     *
      * @return true if the transaction manager has started.
      */
     public static boolean isTransactionManagerRunning() {
@@ -237,6 +253,7 @@ public class TransactionManagerServices {
 
     /**
      * Check if the task scheduler has started.
+     *
      * @return true if the task scheduler has started.
      */
     public static boolean isTaskSchedulerRunning() {

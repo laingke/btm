@@ -22,16 +22,16 @@ package bitronix.tm.recovery;
  */
 public interface RecovererMBean {
 
-    public void run();
+    void run();
 
-    public int getCommittedCount();
+    int getCommittedCount();
 
-    public int getRolledbackCount();
+    int getRolledbackCount();
 
-    public Exception getCompletionException();
+    Exception getCompletionException();
 
-    public int getExecutionsCount();
+    int getExecutionsCount();
 
-    public boolean isRunning();
+    boolean isRunning();
 
 }

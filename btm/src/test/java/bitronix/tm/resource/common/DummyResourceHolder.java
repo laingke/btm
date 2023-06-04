@@ -18,7 +18,8 @@ package bitronix.tm.resource.common;
 import bitronix.tm.BitronixXid;
 import bitronix.tm.internal.XAResourceHolderState;
 import bitronix.tm.utils.Uid;
-import java.util.Date;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import javax.transaction.xa.XAResource;
 
@@ -104,12 +105,12 @@ public class DummyResourceHolder implements XAResourceHolder<DummyResourceHolder
     }
 
     @Override
-    public Date getLastReleaseDate() {
+    public LocalDateTime getLastReleaseDate() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public Date getCreationDate() {
+    public LocalDateTime getCreationDate() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

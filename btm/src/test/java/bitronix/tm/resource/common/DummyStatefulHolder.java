@@ -15,7 +15,7 @@
  */
 package bitronix.tm.resource.common;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -60,12 +60,12 @@ public class DummyStatefulHolder implements XAStatefulHolder<DummyStatefulHolder
     }
 
     @Override
-    public Date getLastReleaseDate() {
+    public LocalDateTime getLastReleaseDate() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
-    public Date getCreationDate() {
+    public LocalDateTime getCreationDate() {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

@@ -24,6 +24,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -34,7 +35,7 @@ import java.util.Set;
  */
 public class TransactionLogCursor {
 
-    private final static Logger log = LoggerFactory.getLogger(TransactionLogCursor.class);
+    private static final Logger log = LoggerFactory.getLogger(TransactionLogCursor.class);
 
     // private final RandomAccessFile randomAccessFile;
     private final FileInputStream fis;
@@ -46,6 +47,7 @@ public class TransactionLogCursor {
     /**
      * Create a TransactionLogCursor that will read from the specified file.
      * This opens a new read-only file descriptor.
+     *
      * @param file the file to read logs from
      * @throws IOException if an I/O error occurs.
      */
@@ -64,6 +66,7 @@ public class TransactionLogCursor {
     /**
      * Fetch the next TransactionLogRecord from log, recalculating the CRC and checking it against the stored one.
      * InvalidChecksumException is thrown if the check fails.
+     *
      * @return the TransactionLogRecord or null if the end of the log file has been reached
      * @throws IOException if an I/O error occurs.
      */
@@ -73,15 +76,17 @@ public class TransactionLogCursor {
 
     /**
      * Fetch the next TransactionLogRecord from log.
+     *
      * @param skipCrcCheck if set to false, the method will thow an InvalidChecksumException if the CRC on disk does
-     *        not match the recalculated one. Otherwise, the CRC is not recalculated nor checked agains the stored one.
+     *                     not match the recalculated one. Otherwise, the CRC is not recalculated nor checked agains the stored one.
      * @return the TransactionLogRecord or null if the end of the log file has been reached
      * @throws IOException if an I/O error occurs.
      */
     public TransactionLogRecord readLog(boolean skipCrcCheck) throws IOException {
         if (currentPosition >= endPosition) {
-            if (log.isDebugEnabled())
-                log.debug("end of transaction log file reached at " + currentPosition);
+            if (log.isDebugEnabled()) {
+                log.debug("end of transaction log file reached at {}", currentPosition);
+            }
             return null;
         }
 
@@ -123,8 +128,9 @@ public class TransactionLogCursor {
         page.position(endOfRecordPosition - 4);
         int endCode = page.getInt();
         page.reset();
-        if (endCode != TransactionLogAppender.END_RECORD)
+        if (endCode != TransactionLogAppender.END_RECORD) {
             throw new CorruptedTransactionLogException("corrupted log found at position " + currentPosition + " (no record terminator found)");
+        }
 
         // check that GTRID is not too long
         if (4 + 8 + 4 + 4 + 1 + gtridSize > recordLength) {
@@ -139,7 +145,7 @@ public class TransactionLogCursor {
         Uid gtrid = new Uid(gtridArray);
         final int uniqueNamesCount = page.getInt();
         currentPosition += 4;
-        Set<String> uniqueNames = new HashSet<String>();
+        Set<String> uniqueNames = new HashSet<>();
         int currentReadCount = 4 + 8 + 4 + 4 + 1 + gtridSize + 4;
 
         for (int i = 0; i < uniqueNamesCount; i++) {
@@ -158,7 +164,7 @@ public class TransactionLogCursor {
             byte[] nameBytes = new byte[length];
             page.get(nameBytes);
             currentPosition += length;
-            uniqueNames.add(new String(nameBytes, "US-ASCII"));
+            uniqueNames.add(new String(nameBytes, StandardCharsets.US_ASCII));
         }
         final int cEndRecord = page.getInt();
         currentPosition += 4;
@@ -178,6 +184,7 @@ public class TransactionLogCursor {
 
     /**
      * Close the cursor and the underlying file
+     *
      * @throws IOException if an I/O error occurs.
      */
     public void close() throws IOException {

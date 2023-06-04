@@ -16,15 +16,14 @@
 package bitronix.tm.resource.jms;
 
 import bitronix.tm.internal.BitronixRuntimeException;
-
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Queue;
-import javax.jms.Topic;
+import jakarta.jms.Destination;
+import jakarta.jms.JMSException;
+import jakarta.jms.Queue;
+import jakarta.jms.Topic;
 
 /**
  * JMS destination wrapper optimized for use with hashed collections where it is the key and a
- * {@link javax.jms.MessageProducer} or a {@link javax.jms.MessageConsumer} is the value.
+ * {@link jakarta.jms.MessageProducer} or a {@link jakarta.jms.MessageConsumer} is the value.
  *
  * @author Ludovic Orban
  */
@@ -54,50 +53,50 @@ public class MessageProducerConsumerKey {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof MessageProducerConsumerKey) {
-            MessageProducerConsumerKey otherKey = (MessageProducerConsumerKey) obj;
+        if (obj instanceof MessageProducerConsumerKey otherKey) {
 
-            if (!areEquals(getDestinationName(), otherKey.getDestinationName()))
+            if (!areEquals(getDestinationName(), otherKey.getDestinationName())) {
                 return false;
-            if (!areEquals(messageSelector, otherKey.messageSelector))
+            }
+            if (!areEquals(messageSelector, otherKey.messageSelector)) {
                 return false;
-            if (!areEquals(noLocal, otherKey.noLocal))
-                return false;
-
-            return true;
+            }
+            return areEquals(noLocal, otherKey.noLocal);
         }
         return false;
     }
 
     private static boolean areEquals(Object o1, Object o2) {
-        if (o1 == null && o2 == null)
+        if (o1 == null && o2 == null) {
             return true;
-        if (o1 != null && o2 == null)
+        }
+        if (o1 != null && o2 == null) {
             return false;
-        if (o1 == null)
+        }
+        if (o1 == null) {
             return false;
+        }
         return o1.equals(o2);
     }
 
     private String getDestinationName() {
         if (destination == null) {
             return null;
-        }
-        else if (destination instanceof Queue) {
+        } else if (destination instanceof Queue) {
             try {
                 return ((Queue) destination).getQueueName();
             } catch (JMSException ex) {
                 throw new BitronixRuntimeException("error getting queue name of " + destination, ex);
             }
-        }
-        else if (destination instanceof Topic) {
+        } else if (destination instanceof Topic) {
             try {
                 return ((Topic) destination).getTopicName();
             } catch (JMSException ex) {
                 throw new BitronixRuntimeException("error getting topic name of " + destination, ex);
             }
+        } else {
+            throw new IllegalArgumentException("unsupported destination: " + destination);
         }
-        else throw new IllegalArgumentException("unsupported destination: " + destination);
     }
 
     @Override
@@ -106,8 +105,9 @@ public class MessageProducerConsumerKey {
     }
 
     private static int hash(Object o) {
-        if (o == null)
+        if (o == null) {
             return 0;
+        }
         return o.hashCode();
     }
 

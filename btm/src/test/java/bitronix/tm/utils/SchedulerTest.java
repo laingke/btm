@@ -17,19 +17,22 @@ package bitronix.tm.utils;
 
 import bitronix.tm.internal.XAResourceHolderState;
 import bitronix.tm.resource.common.ResourceBean;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 /**
  *
  * @author Ludovic Orban
  */
-public class SchedulerTest extends TestCase {
+public class SchedulerTest {
 
+    @Test
     public void testNaturalOrdering() throws Exception {
         Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<XAResourceHolderState>();
 
@@ -60,19 +63,20 @@ public class SchedulerTest extends TestCase {
 
         List<XAResourceHolderState> list0 = resourceScheduler.getByNaturalOrderForPosition(key0);
         assertEquals(1, list0.size());
-        assertTrue(xarhs3 == list0.get(0));
+        assertSame(xarhs3, list0.get(0));
 
         List<XAResourceHolderState> list1 = resourceScheduler.getByNaturalOrderForPosition(key1);
         assertEquals(3, list1.size());
-        assertTrue(xarhs0 == list1.get(0));
-        assertTrue(xarhs1 == list1.get(1));
-        assertTrue(xarhs2 == list1.get(2));
+        assertSame(xarhs0, list1.get(0));
+        assertSame(xarhs1, list1.get(1));
+        assertSame(xarhs2, list1.get(2));
 
         List<XAResourceHolderState> list2 = resourceScheduler.getByNaturalOrderForPosition(key2);
         assertEquals(1, list2.size());
-        assertTrue(xarhs4 == list2.get(0));
+        assertSame(xarhs4, list2.get(0));
     }
 
+    @Test
     public void testReverseOrdering() throws Exception {
         Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<XAResourceHolderState>();
 
@@ -101,21 +105,22 @@ public class SchedulerTest extends TestCase {
 
         List<XAResourceHolderState> list0r = resourceScheduler.getByReverseOrderForPosition(key0r);
         assertEquals(1, list0r.size());
-        assertTrue(xarhs4 == list0r.get(0));
+        assertSame(xarhs4, list0r.get(0));
 
         List<XAResourceHolderState> list1r = resourceScheduler.getByReverseOrderForPosition(key1r);
         assertEquals(3, list1r.size());
-        assertTrue(xarhs2 == list1r.get(0));
-        assertTrue(xarhs1 == list1r.get(1));
-        assertTrue(xarhs0 == list1r.get(2));
+        assertSame(xarhs2, list1r.get(0));
+        assertSame(xarhs1, list1r.get(1));
+        assertSame(xarhs0, list1r.get(2));
 
         List<XAResourceHolderState> list2r = resourceScheduler.getByReverseOrderForPosition(key2r);
         assertEquals(1, list2r.size());
-        assertTrue(xarhs3 == list2r.get(0));
+        assertSame(xarhs3, list2r.get(0));
     }
 
+    @Test
     public void testIterator() {
-        Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<XAResourceHolderState>();
+        Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<>();
 
         XAResourceHolderState xarhs0 = new XAResourceHolderState(null, new MockResourceBean(1));
         XAResourceHolderState xarhs1 = new XAResourceHolderState(null, new MockResourceBean(1));
@@ -133,29 +138,30 @@ public class SchedulerTest extends TestCase {
 
         Iterator<XAResourceHolderState> it = resourceScheduler.iterator();
         assertTrue(it.hasNext());
-        assertTrue(xarhs3 == it.next());
-        assertTrue(xarhs0 == it.next());
-        assertTrue(xarhs1 == it.next());
-        assertTrue(xarhs2 == it.next());
-        assertTrue(xarhs4 == it.next());
+        assertSame(xarhs3, it.next());
+        assertSame(xarhs0, it.next());
+        assertSame(xarhs1, it.next());
+        assertSame(xarhs2, it.next());
+        assertSame(xarhs4, it.next());
         assertFalse(it.hasNext());
 
         it = resourceScheduler.iterator();
         assertTrue(it.hasNext());
-        assertTrue(xarhs3 == it.next());
+        assertSame(xarhs3, it.next());
         it.remove();
-        assertTrue(xarhs0 == it.next());
+        assertSame(xarhs0, it.next());
         it.remove();
-        assertTrue(xarhs1 == it.next());
+        assertSame(xarhs1, it.next());
         it.remove();
-        assertTrue(xarhs2 == it.next());
+        assertSame(xarhs2, it.next());
         it.remove();
-        assertTrue(xarhs4 == it.next());
+        assertSame(xarhs4, it.next());
         it.remove();
         assertFalse(it.hasNext());
         assertEquals(0, resourceScheduler.size());
     }
 
+    @Test
     public void testReverseIterator() {
         Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<XAResourceHolderState>();
 
@@ -173,18 +179,19 @@ public class SchedulerTest extends TestCase {
 
         assertEquals("a Scheduler with 5 object(s) in 3 position(s)", resourceScheduler.toString());
 
-        Iterator it = resourceScheduler.reverseIterator();
+        Iterator<XAResourceHolderState> it = resourceScheduler.reverseIterator();
         assertTrue(it.hasNext());
 
-        assertTrue(xarhs4 == it.next());
-        assertTrue(xarhs0 == it.next());
-        assertTrue(xarhs1 == it.next());
-        assertTrue(xarhs2 == it.next());
-        assertTrue(xarhs3 == it.next());
+        assertSame(xarhs4, it.next());
+        assertSame(xarhs0, it.next());
+        assertSame(xarhs1, it.next());
+        assertSame(xarhs2, it.next());
+        assertSame(xarhs3, it.next());
 
         assertFalse(it.hasNext());
     }
 
+    @Test
     public void testRemove() {
         Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<XAResourceHolderState>();
 
@@ -199,12 +206,13 @@ public class SchedulerTest extends TestCase {
 
         Iterator<XAResourceHolderState> it = resourceScheduler.iterator();
         assertTrue(it.hasNext());
-        assertTrue(xarhs0 == it.next());
+        assertSame(xarhs0, it.next());
         it.remove();
-        assertTrue(xarhs1 == it.next());
+        assertSame(xarhs1, it.next());
         it.remove();
     }
 
+    @Test
     public void testReverseRemove() {
         Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<XAResourceHolderState>();
 
@@ -219,14 +227,15 @@ public class SchedulerTest extends TestCase {
 
         Iterator<XAResourceHolderState> it = resourceScheduler.reverseIterator();
         assertTrue(it.hasNext());
-        assertTrue(xarhs1 == it.next());
+        assertSame(xarhs1, it.next());
         it.remove();
-        assertTrue(xarhs0 == it.next());
+        assertSame(xarhs0, it.next());
         it.remove();
     }
 
+    @Test
     public void testHasNext() {
-        Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<XAResourceHolderState>();
+        Scheduler<XAResourceHolderState> resourceScheduler = new Scheduler<>();
 
         XAResourceHolderState xarhs0 = new XAResourceHolderState(null, new MockResourceBean(0));
         XAResourceHolderState xarhs1 = new XAResourceHolderState(null, new MockResourceBean(10));
@@ -272,7 +281,7 @@ public class SchedulerTest extends TestCase {
             this.commitOrderingPosition = commitOrderingPosition;
         }
 
-
+        @Override
         public int getTwoPcOrderingPosition() {
             return commitOrderingPosition;
         }

@@ -18,18 +18,22 @@ package bitronix.tm;
 import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
 import bitronix.tm.resource.ResourceRegistrar;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Iterator;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class RestartTest extends TestCase {
+public class RestartTest {
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
         Iterator<String> it = ResourceRegistrar.getResourcesUniqueNames().iterator();
         while (it.hasNext()) {
@@ -38,6 +42,7 @@ public class RestartTest extends TestCase {
         }
     }
 
+    @Test
     public void testRestartWithoutLoaderNoReuseResource() throws Exception {
         for (int i=0; i<3 ;i++) {
             PoolingDataSource pds = new PoolingDataSource();
@@ -62,6 +67,7 @@ public class RestartTest extends TestCase {
         }
     }
 
+    @Test
     public void testRestartWithoutLoaderReuseResource() throws Exception {
         PoolingDataSource pds = new PoolingDataSource();
         pds.setClassName(MockitoXADataSource.class.getName());
@@ -86,14 +92,15 @@ public class RestartTest extends TestCase {
         pds.close();
     }
 
+    @Test
     public void testRestartWithLoader() throws Exception {
         for (int i=0; i<3 ;i++) {
             String configFile = new File(getClass().getResource("RestartTest.properties").toURI()).getPath();
             TransactionManagerServices.getConfiguration().setResourceConfigurationFilename(configFile);
             BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
-            assertEquals("at loop iteration #" + (i+1), 1, ResourceRegistrar.getResourcesUniqueNames().size());
+            assertEquals(1, ResourceRegistrar.getResourcesUniqueNames().size(), "at loop iteration #" + (i+1));
             tm.shutdown();
-            assertEquals("at loop iteration #" + (i+1), 0, ResourceRegistrar.getResourcesUniqueNames().size());
+            assertEquals(0, ResourceRegistrar.getResourcesUniqueNames().size(), "at loop iteration #" + (i+1));
         }
     }
 

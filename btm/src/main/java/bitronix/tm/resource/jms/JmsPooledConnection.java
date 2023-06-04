@@ -24,22 +24,15 @@ import bitronix.tm.resource.jms.lrc.LrcXAConnectionFactory;
 import bitronix.tm.utils.ManagementRegistrar;
 import bitronix.tm.utils.MonotonicClock;
 import bitronix.tm.utils.Scheduler;
+import jakarta.jms.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jms.JMSException;
-import javax.jms.Session;
-import javax.jms.TemporaryQueue;
-import javax.jms.XAConnection;
-import javax.jms.XASession;
 import javax.transaction.xa.XAResource;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
 
 /**
  * Implementation of a JMS pooled connection wrapping vendor's {@link XAConnection} implementation.
@@ -49,7 +42,7 @@ import java.util.Set;
  */
 public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConnection> implements JmsPooledConnectionMBean {
 
-    private final static Logger log = LoggerFactory.getLogger(JmsPooledConnection.class);
+    private static final Logger log = LoggerFactory.getLogger(JmsPooledConnection.class);
 
     private volatile XAConnection xaConnection;
     private final PoolingConnectionFactory poolingConnectionFactory;
@@ -57,21 +50,27 @@ public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConne
 
     /* management */
     private final String jmxName;
-    private volatile Date acquisitionDate;
-    private volatile Date lastReleaseDate;
+    private volatile LocalDateTime acquisitionDate;
+    private volatile LocalDateTime lastReleaseDate;
 
     protected JmsPooledConnection(PoolingConnectionFactory poolingConnectionFactory, XAConnection connection) {
         this.poolingConnectionFactory = poolingConnectionFactory;
         this.xaConnection = connection;
-        this.lastReleaseDate = new Date(MonotonicClock.currentTimeMillis());
+        this.lastReleaseDate = Instant.ofEpochMilli(MonotonicClock.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime();
         addStateChangeEventListener(new JmsPooledConnectionStateChangeListener());
 
         if (LrcXAConnectionFactory.class.getName().equals(poolingConnectionFactory.getClassName())) {
-            if (log.isDebugEnabled()) { log.debug("emulating XA for resource " + poolingConnectionFactory.getUniqueName() + " - changing twoPcOrderingPosition to ALWAYS_LAST_POSITION"); }
+            if (log.isDebugEnabled()) {
+                log.debug("emulating XA for resource " + poolingConnectionFactory.getUniqueName() + " - changing twoPcOrderingPosition to ALWAYS_LAST_POSITION");
+            }
             poolingConnectionFactory.setTwoPcOrderingPosition(Scheduler.ALWAYS_LAST_POSITION);
-            if (log.isDebugEnabled()) { log.debug("emulating XA for resource " + poolingConnectionFactory.getUniqueName() + " - changing deferConnectionRelease to true"); }
+            if (log.isDebugEnabled()) {
+                log.debug("emulating XA for resource " + poolingConnectionFactory.getUniqueName() + " - changing deferConnectionRelease to true");
+            }
             poolingConnectionFactory.setDeferConnectionRelease(true);
-            if (log.isDebugEnabled()) { log.debug("emulating XA for resource " + poolingConnectionFactory.getUniqueName() + " - changing useTmJoin to true"); }
+            if (log.isDebugEnabled()) {
+                log.debug("emulating XA for resource " + poolingConnectionFactory.getUniqueName() + " - changing useTmJoin to true");
+            }
             poolingConnectionFactory.setUseTmJoin(true);
         }
 
@@ -109,47 +108,57 @@ public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConne
     @Override
     public List<DualSessionWrapper> getXAResourceHolders() {
         synchronized (sessions) {
-            return new ArrayList<DualSessionWrapper>(sessions);
+            return new ArrayList<>(sessions);
         }
     }
 
     @Override
     public Object getConnectionHandle() throws Exception {
-        if (log.isDebugEnabled()) { log.debug("getting connection handle from " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("getting connection handle from " + this);
+        }
         State oldState = getState();
 
         setState(State.ACCESSIBLE);
 
         if (oldState == State.IN_POOL) {
-            if (log.isDebugEnabled()) { log.debug("connection " + xaConnection + " was in state IN_POOL, testing it"); }
+            if (log.isDebugEnabled()) {
+                log.debug("connection " + xaConnection + " was in state IN_POOL, testing it");
+            }
             testXAConnection();
-        }
-        else {
-            if (log.isDebugEnabled()) { log.debug("connection " + xaConnection + " was in state " + oldState + ", no need to test it"); }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("connection " + xaConnection + " was in state " + oldState + ", no need to test it");
+            }
         }
 
-        if (log.isDebugEnabled()) { log.debug("got connection handle from " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("got connection handle from " + this);
+        }
         return new JmsConnectionHandle(this, xaConnection);
     }
 
     private void testXAConnection() throws JMSException {
         if (!poolingConnectionFactory.getTestConnections()) {
-            if (log.isDebugEnabled()) { log.debug("not testing connection of " + this); }
+            if (log.isDebugEnabled()) {
+                log.debug("not testing connection of " + this);
+            }
             return;
         }
 
-        if (log.isDebugEnabled()) { log.debug("testing connection of " + this); }
-        XASession xaSession = xaConnection.createXASession();
-        try {
+        if (log.isDebugEnabled()) {
+            log.debug("testing connection of " + this);
+        }
+        try (XASession xaSession = xaConnection.createXASession()) {
             TemporaryQueue tq = xaSession.createTemporaryQueue();
             tq.delete();
-        } finally {
-            xaSession.close();
         }
     }
 
     protected void release() throws JMSException {
-        if (log.isDebugEnabled()) { log.debug("releasing to pool " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("releasing to pool " + this);
+        }
         closePendingSessions();
 
         // requeuing
@@ -159,17 +168,22 @@ public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConne
             throw (JMSException) new JMSException("error requeueing " + this).initCause(ex);
         }
 
-        if (log.isDebugEnabled()) { log.debug("released to pool " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("released to pool " + this);
+        }
     }
 
     private void closePendingSessions() {
         synchronized (sessions) {
             for (DualSessionWrapper dualSessionWrapper : sessions) {
-                if (dualSessionWrapper.getState() != State.ACCESSIBLE)
+                if (dualSessionWrapper.getState() != State.ACCESSIBLE) {
                     continue;
+                }
 
                 try {
-                    if (log.isDebugEnabled()) { log.debug("trying to close pending session " + dualSessionWrapper); }
+                    if (log.isDebugEnabled()) {
+                        log.debug("trying to close pending session " + dualSessionWrapper);
+                    }
                     dualSessionWrapper.close();
                 } catch (JMSException ex) {
                     log.warn("error closing pending session " + dualSessionWrapper, ex);
@@ -183,13 +197,16 @@ public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConne
             DualSessionWrapper sessionHandle = getNotAccessibleSession();
 
             if (sessionHandle == null) {
-                if (log.isDebugEnabled()) { log.debug("no session handle found in NOT_ACCESSIBLE state, creating new session"); }
+                if (log.isDebugEnabled()) {
+                    log.debug("no session handle found in NOT_ACCESSIBLE state, creating new session");
+                }
                 sessionHandle = new DualSessionWrapper(this, transacted, acknowledgeMode);
                 sessionHandle.addStateChangeEventListener(new JmsConnectionHandleStateChangeListener());
                 sessions.add(sessionHandle);
-            }
-            else {
-                if (log.isDebugEnabled()) { log.debug("found session handle in NOT_ACCESSIBLE state, recycling it: " + sessionHandle); }
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("found session handle in NOT_ACCESSIBLE state, recycling it: " + sessionHandle);
+                }
                 sessionHandle.setState(State.ACCESSIBLE);
             }
 
@@ -197,19 +214,22 @@ public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConne
         }
     }
 
-     private DualSessionWrapper getNotAccessibleSession() {
+    private DualSessionWrapper getNotAccessibleSession() {
         synchronized (sessions) {
-            if (log.isDebugEnabled()) { log.debug(sessions.size() + " session(s) open from " + this); }
+            if (log.isDebugEnabled()) {
+                log.debug(sessions.size() + " session(s) open from " + this);
+            }
             for (DualSessionWrapper sessionHandle : sessions) {
-                if (sessionHandle.getState() == State.NOT_ACCESSIBLE)
+                if (sessionHandle.getState() == State.NOT_ACCESSIBLE) {
                     return sessionHandle;
+                }
             }
             return null;
         }
     }
 
     @Override
-    public Date getLastReleaseDate() {
+    public LocalDateTime getLastReleaseDate() {
         return lastReleaseDate;
     }
 
@@ -227,14 +247,14 @@ public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConne
     }
 
     @Override
-    public Date getAcquisitionDate() {
+    public LocalDateTime getAcquisitionDate() {
         return acquisitionDate;
     }
 
     @Override
     public Collection<String> getTransactionGtridsCurrentlyHoldingThis() {
         synchronized (sessions) {
-            Set<String> result = new HashSet<String>();
+            Set<String> result = new HashSet<>();
             for (DualSessionWrapper dsw : sessions) {
                 result.addAll(dsw.getXAResourceHolderStateGtrids());
             }
@@ -251,11 +271,13 @@ public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConne
         @Override
         public void stateChanged(JmsPooledConnection source, State oldState, State newState) {
             if (newState == State.IN_POOL) {
-                if (log.isDebugEnabled()) { log.debug("requeued JMS connection of " + poolingConnectionFactory); }
-                lastReleaseDate = new Date(MonotonicClock.currentTimeMillis());
+                if (log.isDebugEnabled()) {
+                    log.debug("requeued JMS connection of " + poolingConnectionFactory);
+                }
+                lastReleaseDate = Instant.ofEpochMilli(MonotonicClock.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime();
             }
             if (oldState == State.IN_POOL && newState == State.ACCESSIBLE) {
-                acquisitionDate = new Date(MonotonicClock.currentTimeMillis());
+                acquisitionDate = Instant.ofEpochMilli(MonotonicClock.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime();
             }
             if (newState == State.CLOSED) {
                 ManagementRegistrar.unregister(jmxName);
@@ -277,7 +299,9 @@ public class JmsPooledConnection extends AbstractXAStatefulHolder<JmsPooledConne
             if (newState == State.CLOSED) {
                 synchronized (sessions) {
                     sessions.remove(source);
-                    if (log.isDebugEnabled()) { log.debug("DualSessionWrapper has been closed, " + sessions.size() + " session(s) left open in pooled connection"); }
+                    if (log.isDebugEnabled()) {
+                        log.debug("DualSessionWrapper has been closed, " + sessions.size() + " session(s) left open in pooled connection");
+                    }
                 }
             }
         }

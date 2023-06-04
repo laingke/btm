@@ -99,10 +99,14 @@ public class LrcXADataSource implements XADataSource {
     public XAConnection getXAConnection() throws SQLException {
         try {
             Class<?> driverClazz = ClassLoaderUtils.loadClass(driverClassName);
-            Driver driver = (Driver) driverClazz.newInstance();
+            Driver driver = (Driver) driverClazz.getDeclaredConstructor().newInstance();
             Properties props = new Properties();
-            if (user != null) props.setProperty("user", user);
-            if (password != null) props.setProperty("password", password);
+            if (user != null) {
+                props.setProperty("user", user);
+            }
+            if (password != null) {
+                props.setProperty("password", password);
+            }
             Connection connection = driver.connect(url, props);
             XAConnection xaConnection = JdbcProxyFactory.INSTANCE.getProxyXaConnection(connection);
             return xaConnection;
@@ -115,7 +119,7 @@ public class LrcXADataSource implements XADataSource {
     public XAConnection getXAConnection(String user, String password) throws SQLException {
         try {
             Class<?> driverClazz = ClassLoaderUtils.loadClass(driverClassName);
-            Driver driver = (Driver) driverClazz.newInstance();
+            Driver driver = (Driver) driverClazz.getDeclaredConstructor().newInstance();
             Properties props = new Properties();
             props.setProperty("user", user);
             props.setProperty("password", password);
@@ -131,8 +135,9 @@ public class LrcXADataSource implements XADataSource {
     public String toString() {
         return "a JDBC LrcXADataSource on " + driverClassName + " with URL " + url;
     }
-    
-	public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		throw new SQLFeatureNotSupportedException();
-	}
+
+    @Override
+    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
+        throw new SQLFeatureNotSupportedException();
+    }
 }

@@ -16,13 +16,9 @@
 package bitronix.tm.twopc.executor;
 
 import bitronix.tm.internal.BitronixRuntimeException;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 /**
  * This implementation executes submitted jobs using a <code>java.util.concurrent</code> cached thread pool.
@@ -35,7 +31,9 @@ public class AsyncExecutor implements Executor {
 
 
     public AsyncExecutor() {
-        executorService = Executors.newCachedThreadPool();
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("async-executor-pool-%d").build();
+        executorService = Executors.newCachedThreadPool(namedThreadFactory);
     }
 
     @Override

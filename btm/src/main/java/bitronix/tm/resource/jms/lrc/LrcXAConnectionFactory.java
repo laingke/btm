@@ -17,11 +17,8 @@ package bitronix.tm.resource.jms.lrc;
 
 import bitronix.tm.utils.ClassLoaderUtils;
 import bitronix.tm.utils.PropertyUtils;
+import jakarta.jms.*;
 
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
-import javax.jms.XAConnection;
-import javax.jms.XAConnectionFactory;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,7 +30,7 @@ import java.util.Map;
 public class LrcXAConnectionFactory implements XAConnectionFactory {
 
     private volatile String connectionFactoryClassName;
-    private volatile Map<String, Object> properties = new HashMap<String, Object>();
+    private volatile Map<String, Object> properties = new HashMap<>();
 
     public LrcXAConnectionFactory() {
     }
@@ -58,7 +55,7 @@ public class LrcXAConnectionFactory implements XAConnectionFactory {
     public XAConnection createXAConnection() throws JMSException {
         try {
             Class<?> clazz = ClassLoaderUtils.loadClass(connectionFactoryClassName);
-            ConnectionFactory nonXaConnectionFactory = (ConnectionFactory) clazz.newInstance();
+            ConnectionFactory nonXaConnectionFactory = (ConnectionFactory) clazz.getDeclaredConstructor().newInstance();
             PropertyUtils.setProperties(nonXaConnectionFactory, properties);
 
             return new LrcXAConnection(nonXaConnectionFactory.createConnection());
@@ -71,13 +68,29 @@ public class LrcXAConnectionFactory implements XAConnectionFactory {
     public XAConnection createXAConnection(String user, String password) throws JMSException {
         try {
             Class<?> clazz = ClassLoaderUtils.loadClass(connectionFactoryClassName);
-            ConnectionFactory nonXaConnectionFactory = (ConnectionFactory) clazz.newInstance();
+            ConnectionFactory nonXaConnectionFactory = (ConnectionFactory) clazz.getDeclaredConstructor().newInstance();
             PropertyUtils.setProperties(nonXaConnectionFactory, properties);
 
             return new LrcXAConnection(nonXaConnectionFactory.createConnection(user, password));
         } catch (Exception ex) {
             throw (JMSException) new JMSException("unable to connect to non-XA resource " + connectionFactoryClassName).initCause(ex);
         }
+    }
+
+    @Override
+    public XAJMSContext createXAContext() {
+        try {
+            Class<?> clazz = ClassLoaderUtils.loadClass(connectionFactoryClassName);
+            ConnectionFactory nonXaConnectionFactory = (ConnectionFactory) clazz.getDeclaredConstructor().newInstance();
+            return (XAJMSContext) nonXaConnectionFactory.createContext();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    @Override
+    public XAJMSContext createXAContext(String userName, String password) {
+        return null;
     }
 
     @Override

@@ -15,7 +15,7 @@
  */
 package bitronix.tm.timer;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -27,17 +27,17 @@ public abstract class Task implements Comparable<Task> {
 
     private static final AtomicInteger UNIQUE_ID_SOURCE = new AtomicInteger();
 
-    private final Date executionTime;
+    private final LocalDateTime executionTime;
     private final TaskScheduler taskScheduler;
     private final int uniqueId;
 
-    protected Task(Date executionTime, TaskScheduler scheduler) {
+    protected Task(LocalDateTime executionTime, TaskScheduler scheduler) {
         this.executionTime = executionTime;
         this.taskScheduler = scheduler;
         this.uniqueId = UNIQUE_ID_SOURCE.getAndIncrement();
     }
 
-    public Date getExecutionTime() {
+    public LocalDateTime getExecutionTime() {
         return executionTime;
     }
 
@@ -45,7 +45,7 @@ public abstract class Task implements Comparable<Task> {
         return taskScheduler;
     }
 
-    /*
+    /**
      * Compare by timestamp.  In the event of a duplicate timestamp, objects uniqueIds are compared so that
      * one task (it doesn't matter which - they both have identical schedule times) will be deemed greater than the
      * other
@@ -55,7 +55,7 @@ public abstract class Task implements Comparable<Task> {
         int compareResult = this.executionTime.compareTo(otherTask.executionTime);
 
         if (compareResult == 0) {
-            compareResult = Integer.valueOf(uniqueId).compareTo(otherTask.getUniqueId());
+            compareResult = Integer.compare(uniqueId, otherTask.getUniqueId());
         }
         return compareResult;
     }

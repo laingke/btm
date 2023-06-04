@@ -29,14 +29,16 @@ import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
 import bitronix.tm.resource.ResourceRegistrar;
 import bitronix.tm.resource.jdbc.PooledConnectionProxy;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
-import junit.framework.TestCase;
 import oracle.jdbc.xa.OracleXAException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.XAConnection;
-import javax.transaction.RollbackException;
-import javax.transaction.Status;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Status;
 import javax.transaction.xa.XAException;
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -44,11 +46,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 /**
  *
  * @author Ludovic Orban
  */
-public class OnePcFailureTest extends TestCase {
+public class OnePcFailureTest {
 
     private final static Logger log = LoggerFactory.getLogger(OnePcFailureTest.class);
 
@@ -74,6 +78,7 @@ public class OnePcFailureTest extends TestCase {
      *   ACTIVE, PREPARING, PREPARED, COMMITTING, COMMITTED
      * @throws Exception if any error happens.
      */
+    @Test
     public void testExpectNoHeuristic() throws Exception {
         tm.begin();
         tm.setTransactionTimeout(10); // TX must not timeout
@@ -99,9 +104,9 @@ public class OnePcFailureTest extends TestCase {
         int journalCommittingEventCount = 0;
         int journalRolledbackEventCount = 0;
         int commitEventCount = 0;
-        List events = EventRecorder.getOrderedEvents();
-        for (int i = 0; i < events.size(); i++) {
-            Event event = (Event) events.get(i);
+        List<? extends Event> events = EventRecorder.getOrderedEvents();
+        for (Event value : events) {
+            Event event = value;
 
             if (event instanceof XAResourceCommitEvent)
                 commitEventCount++;
@@ -121,17 +126,15 @@ public class OnePcFailureTest extends TestCase {
                     journalRolledbackEventCount++;
             }
         }
-        assertEquals("TM should have logged a COMMITTING status", 1, journalCommittingEventCount);
-        assertEquals("TM should have logged a ROLLEDBACK status", 1, journalRolledbackEventCount);
-        assertEquals("TM should not have logged ant UNKNOWN status", 0, journalUnknownEventCount);
-        assertEquals("TM haven't properly tried to commit", 1, commitEventCount);
+        assertEquals(1, journalCommittingEventCount, "TM should have logged a COMMITTING status");
+        assertEquals(1, journalRolledbackEventCount, "TM should have logged a ROLLEDBACK status");
+        assertEquals(0, journalUnknownEventCount, "TM should not have logged ant UNKNOWN status");
+        assertEquals(1, commitEventCount, "TM haven't properly tried to commit");
     }
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-        Iterator<String> it = ResourceRegistrar.getResourcesUniqueNames().iterator();
-        while (it.hasNext()) {
-            String name = it.next();
+        for (String name : ResourceRegistrar.getResourcesUniqueNames()) {
             ResourceRegistrar.unregister(ResourceRegistrar.get(name));
         }
 
@@ -156,7 +159,7 @@ public class OnePcFailureTest extends TestCase {
         tm = TransactionManagerServices.getTransactionManager();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         poolingDataSource1.close();
         tm.shutdown();

@@ -18,30 +18,28 @@ package bitronix.tm.journal;
 import bitronix.tm.TransactionManagerServices;
 import bitronix.tm.utils.Uid;
 import bitronix.tm.utils.UidGenerator;
-import junit.framework.TestCase;
+import jakarta.transaction.Status;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import javax.transaction.Status;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- *
  * @author Ludovic Orban
  */
-public class DiskJournalTest extends TestCase {
+public class DiskJournalTest {
 
+    @BeforeEach
     protected void setUp() throws Exception {
         new File(TransactionManagerServices.getConfiguration().getLogPart1Filename()).delete();
         new File(TransactionManagerServices.getConfiguration().getLogPart2Filename()).delete();
     }
 
+    @Test
     public void testExceptions() throws Exception {
         DiskJournal journal = new DiskJournal();
 
@@ -68,6 +66,7 @@ public class DiskJournalTest extends TestCase {
         journal.shutdown();
     }
 
+    @Test
     public void testSimpleCollectDanglingRecords() throws Exception {
         DiskJournal journal = new DiskJournal();
         journal.open();
@@ -85,6 +84,7 @@ public class DiskJournalTest extends TestCase {
         journal.shutdown();
     }
 
+    @Test
     public void testComplexCollectDanglingRecords() throws Exception {
         DiskJournal journal = new DiskJournal();
         journal.open();
@@ -130,6 +130,7 @@ public class DiskJournalTest extends TestCase {
         journal.shutdown();
     }
 
+    @Test
     public void testCorruptedCollectDanglingRecords() throws Exception {
         DiskJournal journal = new DiskJournal();
         journal.open();
@@ -160,16 +161,17 @@ public class DiskJournalTest extends TestCase {
         journal.shutdown();
     }
 
+    @Test
     public void testCrc32Value() throws Exception {
-        Set<String> names = new HashSet<String>();
+        Set<String> names = new HashSet<>();
         names.add("ActiveMQ");
         names.add("com.mysql.jdbc.jdbc2.optional.MysqlXADataSource");
 
         String uidString = "626974726F6E697853657276657249440000011C31FD45510000955B";
-        byte[] uidArray = new byte[uidString.length()/2];
-        for (int i=0; i<uidString.length()/2 ;i++) {
-            String substr = uidString.substring(i*2, i*2+2);
-            byte b = (byte)Integer.parseInt(substr, 16);
+        byte[] uidArray = new byte[uidString.length() / 2];
+        for (int i = 0; i < uidString.length() / 2; i++) {
+            String substr = uidString.substring(i * 2, i * 2 + 2);
+            byte b = (byte) Integer.parseInt(substr, 16);
 
             uidArray[i] = b;
         }
@@ -177,7 +179,7 @@ public class DiskJournalTest extends TestCase {
 
         TransactionLogRecord tlr = new TransactionLogRecord(Status.STATUS_COMMITTED, 116, 28, 1220609394845L, 38266, -1380478121, uid, names, TransactionLogAppender.END_RECORD);
         boolean correct = tlr.isCrc32Correct();
-        assertTrue("CRC32 values did not match", correct);
+        assertTrue(correct, "CRC32 values did not match");
 
         names = new TreeSet<String>();
         names.add("com.mysql.jdbc.jdbc2.optional.MysqlXADataSource");
@@ -187,26 +189,24 @@ public class DiskJournalTest extends TestCase {
         assertTrue(tlr.isCrc32Correct());
     }
 
+    @Test
     public void testRollover() throws Exception {
-    	TransactionManagerServices.getConfiguration().setMaxLogSizeInMb(1);
+        TransactionManagerServices.getConfiguration().setMaxLogSizeInMb(1);
         DiskJournal journal = new DiskJournal();
         journal.open();
 
-        List<Uid> uncommitted = new ArrayList<Uid>();
+        List<Uid> uncommitted = new ArrayList<>();
         for (int i = 1; i < 4000; i++) {
-	        Uid gtrid = UidGenerator.generateUid();
-	        journal.log(Status.STATUS_COMMITTING, gtrid, csvToSet("name1,name2,name3"));
+            Uid gtrid = UidGenerator.generateUid();
+            journal.log(Status.STATUS_COMMITTING, gtrid, csvToSet("name1,name2,name3"));
 
-	        if (i < 3600)
-	        {
-		        journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name1"));
-		        journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name2"));
-		        journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name3"));
-	        }
-	        else
-	        {
-	        	uncommitted.add(gtrid);
-	        }
+            if (i < 3600) {
+                journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name1"));
+                journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name2"));
+                journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name3"));
+            } else {
+                uncommitted.add(gtrid);
+            }
         }
 
         Map<Uid, JournalRecord> danglingRecords = journal.collectDanglingRecords();
@@ -214,8 +214,8 @@ public class DiskJournalTest extends TestCase {
 
         for (Uid gtrid : uncommitted) {
             journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name1"));
-	        journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name2"));
-	        journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name3"));
+            journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name2"));
+            journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet("name3"));
         }
 
         assertEquals(0, journal.collectDanglingRecords().size());
@@ -223,6 +223,7 @@ public class DiskJournalTest extends TestCase {
         journal.shutdown();
     }
 
+    @Test
     public void testJournalPerformance() throws IOException, InterruptedException {
         TransactionManagerServices.getConfiguration().setMaxLogSizeInMb(40);
         TransactionManagerServices.getConfiguration().setForcedWriteEnabled(false);
@@ -231,14 +232,14 @@ public class DiskJournalTest extends TestCase {
 
         final int threads = 4;
         final int count = 120000 / threads;
-        
+
         class Runner extends Thread {
-            private int ndx;
+            private final int ndx;
 
             Runner(int i) {
                 this.ndx = i;
             }
-            
+
             @Override
             public void run() {
                 try {
@@ -246,17 +247,16 @@ public class DiskJournalTest extends TestCase {
                     for (int i = 1; i < count; i++) {
                         Uid gtrid = UidGenerator.generateUid();
                         journal.log(Status.STATUS_COMMITTING, gtrid, set);
-                        
+
                         journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name1"));
                         journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name2"));
                         journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name3"));
                     }
-                }
-                catch (IOException io) {
+                } catch (IOException io) {
                     fail(io.getMessage());
                 }
             }
-        };
+        }
 
         Runner[] runners = new Runner[threads];
         for (int i = 0; i < threads; i++) {
@@ -271,59 +271,54 @@ public class DiskJournalTest extends TestCase {
         journal.shutdown();
     }
 
+    @Test
     public void testRolloverStress() throws IOException, InterruptedException {
         TransactionManagerServices.getConfiguration().setMaxLogSizeInMb(1);
         final DiskJournal journal = new DiskJournal();
         journal.open();
 
         class Runner extends Thread {
-        	private int ndx;
+            private final int ndx;
 
-        	Runner(int i) {
-        		this.ndx = i;
-        	}
+            Runner(int i) {
+                this.ndx = i;
+            }
 
-        	@Override
-        	public void run() {
-        		try {
-        			SortedSet<String> set = csvToSet(String.format("%d.name1,%d.name2,%d.name3", ndx, ndx, ndx));
-	        		for (int i = 1; i < 40000; i++) {
-	        			Uid gtrid = UidGenerator.generateUid();
-	        			journal.log(Status.STATUS_COMMITTING, gtrid, set);
+            @Override
+            public void run() {
+                try {
+                    SortedSet<String> set = csvToSet(String.format("%d.name1,%d.name2,%d.name3", ndx, ndx, ndx));
+                    for (int i = 1; i < 40000; i++) {
+                        Uid gtrid = UidGenerator.generateUid();
+                        journal.log(Status.STATUS_COMMITTING, gtrid, set);
                         journal.force();
-	        			
-	        			journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name1"));
-	        			journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name2"));
-	        			journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name3"));
-	        		}
-        		}
-        		catch (IOException io) {
-        			fail(io.getMessage());
-        		}
-        	}
-        };
+
+                        journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name1"));
+                        journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name2"));
+                        journal.log(Status.STATUS_COMMITTED, gtrid, csvToSet(ndx + ".name3"));
+                    }
+                } catch (IOException io) {
+                    fail(io.getMessage());
+                }
+            }
+        }
 
         Runner[] runners = new Runner[4];
         for (int i = 0; i < 4; i++) {
-        	runners[i] = new Runner(i);
-        	runners[i].start();
+            runners[i] = new Runner(i);
+            runners[i].start();
         }
 
         for (int i = 0; i < 4; i++) {
-        	runners[i].join();
+            runners[i].join();
         }
 
         journal.shutdown();
     }
 
     private SortedSet<String> csvToSet(String s) {
-        SortedSet<String> result = new TreeSet<String>();
-        String[] names = s.split("\\,");
-        for (int i = 0; i < names.length; i++) {
-            String name = names[i];
-            result.add(name);
-        }
-        return result;
+        String[] names = s.split(",");
+        return new TreeSet<>(Arrays.asList(names));
     }
 
 }

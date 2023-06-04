@@ -17,38 +17,44 @@ package bitronix.tm.timer;
 
 import bitronix.tm.recovery.Recoverer;
 import bitronix.tm.utils.MonotonicClock;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 /**
  *
  * @author Ludovic Orban
  */
-public class TaskSchedulerTest extends TestCase {
+public class TaskSchedulerTest {
 
     private TaskScheduler ts;
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
         ts = new TaskScheduler();
         ts.start();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         assertEquals(0, ts.countTasksQueued());
         ts.shutdown();
     }
 
-
+    @Test
     public void testRecoveryTask() throws Exception {
         Recoverer recoverer = new Recoverer();
-        ts.scheduleRecovery(recoverer, new Date());
+        ts.scheduleRecovery(recoverer, LocalDateTime.now());
         assertEquals(1, ts.countTasksQueued());
         Thread.sleep(1100);
         assertEquals(1, ts.countTasksQueued());
@@ -59,12 +65,15 @@ public class TaskSchedulerTest extends TestCase {
         assertEquals(0, ts.countTasksQueued());
     }
 
+    @Test
     public void testTaskOrdering() throws Exception {
         List<SimpleTask> result = Collections.synchronizedList(new ArrayList<SimpleTask>());
-
-        ts.addTask(new SimpleTask(new Date(MonotonicClock.currentTimeMillis() + 100), ts, 0, result));
-        ts.addTask(new SimpleTask(new Date(MonotonicClock.currentTimeMillis() + 200), ts, 1, result));
-        ts.addTask(new SimpleTask(new Date(MonotonicClock.currentTimeMillis() + 300), ts, 2, result));
+        ts.addTask(new SimpleTask(Instant.ofEpochMilli(MonotonicClock.currentTimeMillis() + 100)
+                .atZone(ZoneId.systemDefault()).toLocalDateTime(), ts, 0, result));
+        ts.addTask(new SimpleTask(Instant.ofEpochMilli(MonotonicClock.currentTimeMillis() + 200)
+                .atZone(ZoneId.systemDefault()).toLocalDateTime(), ts, 1, result));
+        ts.addTask(new SimpleTask(Instant.ofEpochMilli(MonotonicClock.currentTimeMillis() + 300)
+                .atZone(ZoneId.systemDefault()).toLocalDateTime(), ts, 2, result));
 
         ts.join(1000);
 
@@ -73,19 +82,19 @@ public class TaskSchedulerTest extends TestCase {
         assertEquals(2, result.get(2).getObject());
     }
 
+    @Test
     public void testIdenticalScheduleTimestamp() throws Exception {
         List<SimpleTask> result = Collections.synchronizedList(new ArrayList<SimpleTask>());
 
         long firstTimestamp = MonotonicClock.currentTimeMillis();
         long secondTimestamp = MonotonicClock.currentTimeMillis() + 200;
 
-        ts.addTask(new SimpleTask(new Date(firstTimestamp), ts, 0, result));
+        ts.addTask(new SimpleTask(Instant.ofEpochMilli(firstTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime(), ts, 0, result));
 
-        ts.addTask(new SimpleTask(new Date(secondTimestamp), ts, 1, result));
-        ts.addTask(new SimpleTask(new Date(secondTimestamp), ts, 2, result));
+        ts.addTask(new SimpleTask(Instant.ofEpochMilli(secondTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime(), ts, 1, result));
+        ts.addTask(new SimpleTask(Instant.ofEpochMilli(secondTimestamp).atZone(ZoneId.systemDefault()).toLocalDateTime(), ts, 2, result));
 
-        assertEquals("Three tasks were created.  All 3 (even identical timestamps) should be queued",
-                3, ts.countTasksQueued());
+        assertEquals(3, ts.countTasksQueued(), "Three tasks were created.  All 3 (even identical timestamps) should be queued");
 
         ts.join(1000);
     }
@@ -95,7 +104,7 @@ public class TaskSchedulerTest extends TestCase {
         private final Object obj;
         private final List<SimpleTask> result;
 
-        protected SimpleTask(Date executionTime, TaskScheduler scheduler, Object obj, List<SimpleTask> result) {
+        protected SimpleTask(LocalDateTime executionTime, TaskScheduler scheduler, Object obj, List<SimpleTask> result) {
             super(executionTime, scheduler);
             this.obj = obj;
             this.result = result;

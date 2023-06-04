@@ -16,13 +16,9 @@
 package bitronix.tm.resource.jms;
 
 import bitronix.tm.resource.common.TransactionContextHelper;
-
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageProducer;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
+import jakarta.jms.*;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.SystemException;
 
 /**
  * {@link MessageProducer} wrapper that adds XA enlistment semantics.
@@ -48,6 +44,7 @@ public class MessageProducerWrapper implements MessageProducer {
     /**
      * Enlist this session into the current transaction if automaticEnlistingEnabled = true for this resource.
      * If no transaction is running then this method does nothing.
+     *
      * @throws JMSException if an exception occurs
      */
     protected void enlistResource() throws JMSException {
@@ -55,9 +52,7 @@ public class MessageProducerWrapper implements MessageProducer {
             session.getSession(); // make sure the session is created before enlisting it
             try {
                 TransactionContextHelper.enlistInCurrentTransaction(session);
-            } catch (SystemException ex) {
-                throw (JMSException) new JMSException("error enlisting " + this).initCause(ex);
-            } catch (RollbackException ex) {
+            } catch (SystemException | RollbackException ex) {
                 throw (JMSException) new JMSException("error enlisting " + this).initCause(ex);
             }
         } // if getAutomaticEnlistingEnabled
@@ -92,6 +87,30 @@ public class MessageProducerWrapper implements MessageProducer {
     public void send(Destination destination, Message message, int deliveryMode, int priority, long timeToLive) throws JMSException {
         enlistResource();
         getMessageProducer().send(destination, message, deliveryMode, priority, timeToLive);
+    }
+
+    @Override
+    public void send(Message message, CompletionListener completionListener) throws JMSException {
+        enlistResource();
+        getMessageProducer().send(message, completionListener);
+    }
+
+    @Override
+    public void send(Message message, int deliveryMode, int priority, long timeToLive, CompletionListener completionListener) throws JMSException {
+        enlistResource();
+        getMessageProducer().send(message, deliveryMode, priority, timeToLive, completionListener);
+    }
+
+    @Override
+    public void send(Destination destination, Message message, CompletionListener completionListener) throws JMSException {
+        enlistResource();
+        getMessageProducer().send(destination, message, completionListener);
+    }
+
+    @Override
+    public void send(Destination destination, Message message, int deliveryMode, int priority, long timeToLive, CompletionListener completionListener) throws JMSException {
+        enlistResource();
+        getMessageProducer().send(destination, message, deliveryMode, priority, timeToLive, completionListener);
     }
 
     @Override
@@ -149,6 +168,16 @@ public class MessageProducerWrapper implements MessageProducer {
     @Override
     public long getTimeToLive() throws JMSException {
         return getMessageProducer().getTimeToLive();
+    }
+
+    @Override
+    public void setDeliveryDelay(long deliveryDelay) throws JMSException {
+        getMessageProducer().setDeliveryDelay(deliveryDelay);
+    }
+
+    @Override
+    public long getDeliveryDelay() throws JMSException {
+        return getMessageProducer().getDeliveryDelay();
     }
 
     @Override

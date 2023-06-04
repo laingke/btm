@@ -38,8 +38,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * EHCache implementation of BTM's XAResourceProducer.
  * <p>
- *   Copyright 2003-2010 Terracotta, Inc.
+ * Copyright 2003-2010 Terracotta, Inc.
  * </p>
+ *
  * @author Ludovic Orban
  */
 @SuppressWarnings("serial")
@@ -47,9 +48,9 @@ public final class EhCacheXAResourceProducer extends ResourceBean implements XAR
 
     private static final Logger log = LoggerFactory.getLogger(EhCacheXAResourceProducer.class.getName());
 
-    private static final ConcurrentMap<String, EhCacheXAResourceProducer> producers = new ConcurrentHashMap<String, EhCacheXAResourceProducer>();
+    private static final ConcurrentMap<String, EhCacheXAResourceProducer> producers = new ConcurrentHashMap<>();
 
-    private final ConcurrentMap<Integer, EhCacheXAResourceHolder> xaResourceHolders = new ConcurrentHashMap<Integer, EhCacheXAResourceHolder>();
+    private final ConcurrentMap<Integer, EhCacheXAResourceHolder> xaResourceHolders = new ConcurrentHashMap<>();
     private final AtomicInteger xaResourceHolderCounter = new AtomicInteger();
     private volatile RecoveryXAResourceHolder recoveryXAResourceHolder;
 
@@ -62,6 +63,7 @@ public final class EhCacheXAResourceProducer extends ResourceBean implements XAR
     /**
      * Register an XAResource of a cache with BTM. The first time a XAResource is registered a new
      * EhCacheXAResourceProducer is created to hold it.
+     *
      * @param uniqueName the uniqueName of this XAResourceProducer, usually the cache's name
      * @param xaResource the XAResource to be registered
      */
@@ -86,6 +88,7 @@ public final class EhCacheXAResourceProducer extends ResourceBean implements XAR
 
     /**
      * Unregister an XAResource of a cache from BTM.
+     *
      * @param uniqueName the uniqueName of this XAResourceProducer, usually the cache's name
      * @param xaResource the XAResource to be registered
      */
@@ -95,14 +98,14 @@ public final class EhCacheXAResourceProducer extends ResourceBean implements XAR
         if (xaResourceProducer != null) {
             boolean found = xaResourceProducer.removeXAResource(xaResource);
             if (!found) {
-                log.error("no XAResource " + xaResource + " found in XAResourceProducer with name " + uniqueName);
+                log.error("no XAResource {} found in XAResourceProducer with name {}", xaResource, uniqueName);
             }
             if (xaResourceProducer.xaResourceHolders.isEmpty()) {
                 xaResourceProducer.close();
                 producers.remove(uniqueName);
             }
         } else {
-            log.error("no XAResourceProducer registered with name " + uniqueName);
+            log.error("no XAResourceProducer registered with name {}", uniqueName);
         }
     }
 

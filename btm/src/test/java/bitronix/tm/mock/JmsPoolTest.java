@@ -20,26 +20,26 @@ import bitronix.tm.mock.resource.jms.MockXAConnectionFactory;
 import bitronix.tm.recovery.RecoveryException;
 import bitronix.tm.resource.common.XAPool;
 import bitronix.tm.resource.jms.PoolingConnectionFactory;
-import junit.framework.TestCase;
+import jakarta.jms.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import javax.jms.Connection;
-import javax.jms.JMSException;
-import javax.jms.MessageProducer;
-import javax.jms.Queue;
-import javax.jms.Session;
 import java.lang.reflect.Field;
+import java.time.Duration;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- *
  * @author Ludovic Orban
  */
-public class JmsPoolTest extends TestCase {
+public class JmsPoolTest {
 
     private PoolingConnectionFactory pcf;
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-        TransactionManagerServices.getConfiguration().setJournal("null").setGracefulShutdownInterval(2);
+        TransactionManagerServices.getConfiguration().setJournal("null").setGracefulShutdownInterval(Duration.ofSeconds(2L));
         TransactionManagerServices.getTransactionManager();
 
         MockXAConnectionFactory.setStaticCloseXAConnectionException(null);
@@ -56,13 +56,14 @@ public class JmsPoolTest extends TestCase {
         pcf.init();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         pcf.close();
 
         TransactionManagerServices.getTransactionManager().shutdown();
     }
 
+    @Test
     public void testInitFailure() throws Exception {
         pcf.close();
 
@@ -92,6 +93,7 @@ public class JmsPoolTest extends TestCase {
         TransactionManagerServices.getTransactionManager().commit();
     }
 
+    @Test
     public void testReEnteringRecovery() throws Exception {
         pcf.startRecovery();
         try {
@@ -107,7 +109,7 @@ public class JmsPoolTest extends TestCase {
         pcf.endRecovery();
     }
 
-
+    @Test
     public void testPoolNotStartingTransactionManager() throws Exception {
         // make sure TM is not running
         TransactionManagerServices.getTransactionManager().shutdown();
@@ -140,6 +142,7 @@ public class JmsPoolTest extends TestCase {
         assertFalse(TransactionManagerServices.isTransactionManagerRunning());
     }
 
+    @Test
     public void testPoolShrink() throws Exception {
         Field poolField = pcf.getClass().getDeclaredField("pool");
         poolField.setAccessible(true);
@@ -167,6 +170,7 @@ public class JmsPoolTest extends TestCase {
         assertEquals(1, pool.totalPoolSize());
     }
 
+    @Test
     public void testPoolShrinkErrorHandling() throws Exception {
         Field poolField = pcf.getClass().getDeclaredField("pool");
         poolField.setAccessible(true);
@@ -197,6 +201,7 @@ public class JmsPoolTest extends TestCase {
         assertEquals(1, pool.inPoolSize());
     }
 
+    @Test
     public void testPoolReset() throws Exception {
         Field poolField = pcf.getClass().getDeclaredField("pool");
         poolField.setAccessible(true);
@@ -222,6 +227,7 @@ public class JmsPoolTest extends TestCase {
         assertEquals(1, pool.totalPoolSize());
     }
 
+    @Test
     public void testPoolResetErrorHandling() throws Exception {
         Field poolField = pcf.getClass().getDeclaredField("pool");
         poolField.setAccessible(true);

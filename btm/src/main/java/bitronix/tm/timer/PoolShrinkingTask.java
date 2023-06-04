@@ -17,7 +17,7 @@ package bitronix.tm.timer;
 
 import bitronix.tm.resource.common.XAPool;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * This task is used to notify a XA pool to close idle connections.
@@ -28,7 +28,7 @@ public class PoolShrinkingTask extends Task {
 
     private final XAPool xaPool;
 
-    public PoolShrinkingTask(XAPool xaPool, Date executionTime, TaskScheduler scheduler) {
+    public PoolShrinkingTask(XAPool xaPool, LocalDateTime executionTime, TaskScheduler scheduler) {
         super(executionTime, scheduler);
         this.xaPool = xaPool;
     }

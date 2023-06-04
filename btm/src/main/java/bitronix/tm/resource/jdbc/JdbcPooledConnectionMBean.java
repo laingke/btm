@@ -15,8 +15,8 @@
  */
 package bitronix.tm.resource.jdbc;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Date;
 
 /**
  * {@link JdbcPooledConnection} Management interface.
@@ -26,7 +26,9 @@ import java.util.Date;
 public interface JdbcPooledConnectionMBean {
 
     String getStateDescription();
-    Date getAcquisitionDate();
+
+    LocalDateTime getAcquisitionDate();
+
     Collection<String> getTransactionGtridsCurrentlyHoldingThis();
 
 }

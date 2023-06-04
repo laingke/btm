@@ -15,23 +15,15 @@
  */
 package bitronix.tm.utils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Positional object container. Objects can be added to a scheduler at a certain position (or priority) and can be
  * retrieved later on in their position + added order. All the objects of a scheduler can be iterated in order or
  * objects of a cetain position can be retrieved for iteration.
  *
- * @author Ludovic Orban
  * @param <T> the type the scheduler handles
+ * @author Ludovic Orban
  */
 public class Scheduler<T> implements Iterable<T> {
 
@@ -39,8 +31,8 @@ public class Scheduler<T> implements Iterable<T> {
     public static final Integer ALWAYS_FIRST_POSITION = Integer.MIN_VALUE;
     public static final Integer ALWAYS_LAST_POSITION = Integer.MAX_VALUE;
 
-    private final List<Integer> keys = new ArrayList<Integer>();
-    private final Map<Integer, List<T>> objects = new TreeMap<Integer, List<T>>();
+    private final List<Integer> keys = new ArrayList<>();
+    private final Map<Integer, List<T>> objects = new TreeMap<>();
     private int size = 0;
 
 
@@ -54,7 +46,7 @@ public class Scheduler<T> implements Iterable<T> {
                 keys.add(position);
                 Collections.sort(keys);
             }
-            list = new ArrayList<T>();
+            list = new ArrayList<>();
             objects.put(position, list);
         }
         list.add(obj);
@@ -74,11 +66,11 @@ public class Scheduler<T> implements Iterable<T> {
     }
 
     public synchronized SortedSet<Integer> getNaturalOrderPositions() {
-        return new TreeSet<Integer>(objects.keySet());
+        return new TreeSet<>(objects.keySet());
     }
 
     public synchronized SortedSet<Integer> getReverseOrderPositions() {
-        TreeSet<Integer> result = new TreeSet<Integer>(Collections.reverseOrder());
+        TreeSet<Integer> result = new TreeSet<>(Collections.reverseOrder());
         result.addAll(getNaturalOrderPositions());
         return result;
     }
@@ -88,7 +80,7 @@ public class Scheduler<T> implements Iterable<T> {
     }
 
     public synchronized List<T> getByReverseOrderForPosition(Integer position) {
-        List<T> result = new ArrayList<T>(getByNaturalOrderForPosition(position));
+        List<T> result = new ArrayList<>(getByNaturalOrderForPosition(position));
         Collections.reverse(result);
         return result;
     }
@@ -126,8 +118,9 @@ public class Scheduler<T> implements Iterable<T> {
         @Override
         public void remove() {
             synchronized (Scheduler.this) {
-                if (objectsOfCurrentKey == null)
+                if (objectsOfCurrentKey == null) {
                     throw new NoSuchElementException("iterator not yet placed on an element");
+                }
 
                 objectsOfCurrentKeyIndex--;
                 objectsOfCurrentKey.remove(objectsOfCurrentKeyIndex);
@@ -169,8 +162,9 @@ public class Scheduler<T> implements Iterable<T> {
         @Override
         public T next() {
             synchronized (Scheduler.this) {
-                if (!hasNext())
+                if (!hasNext()) {
                     throw new NoSuchElementException("iterator bounds reached");
+                }
                 return objectsOfCurrentKey.get(objectsOfCurrentKeyIndex++);
             }
         }
@@ -186,22 +180,23 @@ public class Scheduler<T> implements Iterable<T> {
 
         private SchedulerReverseOrderIterator() {
             synchronized (Scheduler.this) {
-                this.nextKeyIndex = Scheduler.this.keys.size() -1;
+                this.nextKeyIndex = Scheduler.this.keys.size() - 1;
             }
         }
 
         @Override
         public void remove() {
             synchronized (Scheduler.this) {
-                if (objectsOfCurrentKey == null)
+                if (objectsOfCurrentKey == null) {
                     throw new NoSuchElementException("iterator not yet placed on an element");
+                }
 
                 objectsOfCurrentKeyIndex--;
                 objectsOfCurrentKey.remove(objectsOfCurrentKeyIndex);
                 if (objectsOfCurrentKey.isEmpty()) {
                     // there are no more objects in the current position's list -> remove it
-                    Integer key = Scheduler.this.keys.get(nextKeyIndex+1);
-                    Scheduler.this.keys.remove(nextKeyIndex+1);
+                    Integer key = Scheduler.this.keys.get(nextKeyIndex + 1);
+                    Scheduler.this.keys.remove(nextKeyIndex + 1);
                     Scheduler.this.objects.remove(key);
                     objectsOfCurrentKey = null;
                 }
@@ -235,8 +230,9 @@ public class Scheduler<T> implements Iterable<T> {
         @Override
         public T next() {
             synchronized (Scheduler.this) {
-                if (!hasNext())
+                if (!hasNext()) {
                     throw new NoSuchElementException("iterator bounds reached");
+                }
                 return objectsOfCurrentKey.get(objectsOfCurrentKeyIndex++);
             }
         }

@@ -15,8 +15,8 @@
  */
 package bitronix.tm.resource.jms;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Date;
 
 /**
  * {@link JmsPooledConnection} Management interface.
@@ -26,7 +26,9 @@ import java.util.Date;
 public interface JmsPooledConnectionMBean {
 
     String getStateDescription();
-    Date getAcquisitionDate();
+
+    LocalDateTime getAcquisitionDate();
+
     Collection<String> getTransactionGtridsCurrentlyHoldingThis();
 
 }

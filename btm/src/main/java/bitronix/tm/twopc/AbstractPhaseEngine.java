@@ -26,12 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.transaction.xa.XAException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 
 /**
  * Abstract phase execution engine.
@@ -40,7 +35,7 @@ import java.util.SortedSet;
  */
 public abstract class AbstractPhaseEngine {
 
-    private final static Logger log = LoggerFactory.getLogger(AbstractPhaseEngine.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractPhaseEngine.class);
 
     private final Executor executor;
 
@@ -53,8 +48,9 @@ public abstract class AbstractPhaseEngine {
      * once resource in a position, command is sent in enlistment order (again reversed or not).
      * If {@link bitronix.tm.Configuration#isAsynchronous2Pc()} is true, all commands in a given position are sent
      * in parallel by using the detected {@link Executor} implementation.
+     *
      * @param resourceManager the {@link XAResourceManager} containing the enlisted resources to execute the phase on.
-     * @param reverse true if jobs should be executed in reverse position / enlistment order, false for natural position / enlistment order.
+     * @param reverse         true if jobs should be executed in reverse position / enlistment order, false for natural position / enlistment order.
      * @throws PhaseException if one or more resource threw an exception during phase execution.
      * @see bitronix.tm.twopc.executor.SyncExecutor
      * @see bitronix.tm.twopc.executor.AsyncExecutor
@@ -63,14 +59,17 @@ public abstract class AbstractPhaseEngine {
         SortedSet<Integer> positions;
         if (reverse) {
             positions = resourceManager.getReverseOrderPositions();
-            if (log.isDebugEnabled()) { log.debug("executing phase on " + resourceManager.size() + " resource(s) enlisted in " + positions.size() + " position(s) in reverse position order"); }
-        }
-        else {
+            if (log.isDebugEnabled()) {
+                log.debug("executing phase on {} resource(s) enlisted in {} position(s) in reverse position order", resourceManager.size(), positions.size());
+            }
+        } else {
             positions = resourceManager.getNaturalOrderPositions();
-            if (log.isDebugEnabled()) { log.debug("executing phase on " + resourceManager.size() + " resource(s) enlisted in " + positions.size() + " position(s) in natural position order"); }
+            if (log.isDebugEnabled()) {
+                log.debug("executing phase on {} resource(s) enlisted in {} position(s) in natural position order", resourceManager.size(), positions.size());
+            }
         }
 
-        List<JobsExecutionReport> positionErrorReports = new ArrayList<JobsExecutionReport>();
+        List<JobsExecutionReport> positionErrorReports = new ArrayList<>();
 
         for (Integer positionKey : positions) {
             List<XAResourceHolderState> resources;
@@ -80,20 +79,26 @@ public abstract class AbstractPhaseEngine {
                 resources = resourceManager.getNaturalOrderResourcesForPosition(positionKey);
             }
 
-            if (log.isDebugEnabled()) { log.debug("running " + resources.size() + " job(s) for position '" + positionKey + "'"); }
+            if (log.isDebugEnabled()) {
+                log.debug("running {} job(s) for position '{}'", resources.size(), positionKey);
+            }
             JobsExecutionReport report = runJobsForPosition(resources);
-            if (report.getExceptions().size() > 0) {
-                if (log.isDebugEnabled()) { log.debug(report.getExceptions().size() + " error(s) happened during execution of position '" + positionKey + "'"); }
+            if (!report.getExceptions().isEmpty()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("{} error(s) happened during execution of position '{}'", report.getExceptions().size(), positionKey);
+                }
                 positionErrorReports.add(report);
                 break;
             }
-            if (log.isDebugEnabled()) { log.debug("ran " + resources.size() + " job(s) for position '" + positionKey + "'"); }
+            if (log.isDebugEnabled()) {
+                log.debug("ran {} job(s) for position '{}'", resources.size(), positionKey);
+            }
         }
 
-        if (positionErrorReports.size() > 0) {
+        if (!positionErrorReports.isEmpty()) {
             // merge all resources and exceptions lists
-            List<Exception> exceptions = new ArrayList<Exception>();
-            List<XAResourceHolderState> resources = new ArrayList<XAResourceHolderState>();
+            List<Exception> exceptions = new ArrayList<>();
+            List<XAResourceHolderState> resources = new ArrayList<>();
 
             for (JobsExecutionReport report : positionErrorReports) {
                 exceptions.addAll(report.getExceptions());
@@ -105,14 +110,16 @@ public abstract class AbstractPhaseEngine {
     }
 
     private JobsExecutionReport runJobsForPosition(List<XAResourceHolderState> resources) {
-        List<Job> jobs = new ArrayList<Job>();
-        List<Exception> exceptions = new ArrayList<Exception>();
-        List<XAResourceHolderState> errorResources = new ArrayList<XAResourceHolderState>();
+        List<Job> jobs = new ArrayList<>();
+        List<Exception> exceptions = new ArrayList<>();
+        List<XAResourceHolderState> errorResources = new ArrayList<>();
 
         // start threads
         for (XAResourceHolderState resource : resources) {
             if (!isParticipating(resource)) {
-                if (log.isDebugEnabled()) { log.debug("skipping not participating resource " + resource); }
+                if (log.isDebugEnabled()) {
+                    log.debug("skipping not participating resource {}", resource);
+                }
                 continue;
             }
 
@@ -134,24 +141,32 @@ public abstract class AbstractPhaseEngine {
 
             if (xaException != null) {
                 String extraErrorDetails = TransactionManagerServices.getExceptionAnalyzer().extractExtraXAExceptionDetails(xaException);
-                if (log.isDebugEnabled()) { log.debug("error executing " + job + ", errorCode=" + Decoder.decodeXAExceptionErrorCode(xaException) +
-                        (extraErrorDetails == null ? "" : ", extra error=" + extraErrorDetails)); }
+                if (log.isDebugEnabled()) {
+                    log.debug("error executing {}, errorCode={}{}",
+                            job, Decoder.decodeXAExceptionErrorCode(xaException),
+                            extraErrorDetails == null ? "" : ", extra error=" + extraErrorDetails);
+                }
                 exceptions.add(xaException);
                 errorResources.add(job.getResource());
             } else if (runtimeException != null) {
-                if (log.isDebugEnabled()) { log.debug("error executing " + job); }
+                if (log.isDebugEnabled()) {
+                    log.debug("error executing {}", job);
+                }
                 exceptions.add(runtimeException);
                 errorResources.add(job.getResource());
             }
         }
 
-        if (log.isDebugEnabled()) { log.debug("phase executed with " + exceptions.size() + " exception(s)"); }
+        if (log.isDebugEnabled()) {
+            log.debug("phase executed with {} exception(s)", exceptions.size());
+        }
         return new JobsExecutionReport(exceptions, errorResources);
     }
 
     /**
      * Determine if a resource is participating in the phase or not. A participating resource gets
      * a job created to execute the phase's command on it.
+     *
      * @param xaResourceHolderState the resource to check for its participation.
      * @return true if the resource must participate in the phase.
      */
@@ -159,6 +174,7 @@ public abstract class AbstractPhaseEngine {
 
     /**
      * Create a {@link Job} that is going to execute the phase command on the given resource.
+     *
      * @param xaResourceHolderState the resource that is going to receive a command.
      * @return the {@link Job} that is going to execute the command.
      */
@@ -166,6 +182,7 @@ public abstract class AbstractPhaseEngine {
 
     /**
      * Log exceptions that happened during a phase failure.
+     *
      * @param ex the phase exception.
      */
     protected void logFailedResources(PhaseException ex) {
@@ -180,7 +197,7 @@ public abstract class AbstractPhaseEngine {
     }
 
     protected static Set<String> collectResourcesUniqueNames(List<XAResourceHolderState> resources) {
-        Set<String> uniqueNames = new HashSet<String>();
+        Set<String> uniqueNames = new HashSet<>();
 
         for (XAResourceHolderState resourceHolderState : resources) {
             uniqueNames.add(resourceHolderState.getUniqueName());
@@ -190,20 +207,19 @@ public abstract class AbstractPhaseEngine {
     }
 
     protected static List<XAResourceHolderState> collectNotInterestedResources(List<XAResourceHolderState> allResources, List<XAResourceHolderState> interestedResources) {
-        List<XAResourceHolderState> result = new ArrayList<XAResourceHolderState>();
+        List<XAResourceHolderState> result = new ArrayList<>();
 
         for (XAResourceHolderState resourceHolderState : allResources) {
-            if (!CollectionUtils.containsByIdentity(interestedResources, resourceHolderState))
+            if (!CollectionUtils.containsByIdentity(interestedResources, resourceHolderState)) {
                 result.add(resourceHolderState);
+            }
         }
 
         return result;
     }
 
-    private final static class JobsExecutionReport {
-        private final List<Exception> exceptions;
-        private final List<XAResourceHolderState> resources;
-
+    private record JobsExecutionReport(List<Exception> exceptions,
+                                       List<XAResourceHolderState> resources) {
         private JobsExecutionReport(List<Exception> exceptions, List<XAResourceHolderState> resources) {
             this.exceptions = Collections.unmodifiableList(exceptions);
             this.resources = Collections.unmodifiableList(resources);

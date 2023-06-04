@@ -28,10 +28,10 @@ import java.util.Map;
  */
 public class CallableStatementJavaProxy extends JavaProxyBase<CallableStatement> {
 
-    private final static Map<String, Method> selfMethodMap = createMethodMap(CallableStatementJavaProxy.class);
+    private static final Map<String, Method> selfMethodMap = createMethodMap(CallableStatementJavaProxy.class);
 
     private JdbcPooledConnection jdbcPooledConnection;
-    
+
     public CallableStatementJavaProxy() {
         // Default constructor
     }
@@ -41,7 +41,7 @@ public class CallableStatementJavaProxy extends JavaProxyBase<CallableStatement>
     }
 
     void initialize(JdbcPooledConnection jdbcPooledConnection, CallableStatement statement) {
-    	this.proxy = this;
+        this.proxy = this;
         this.jdbcPooledConnection = jdbcPooledConnection;
         this.delegate = statement;
     }
@@ -58,15 +58,15 @@ public class CallableStatementJavaProxy extends JavaProxyBase<CallableStatement>
     }
 
     public ResultSet executeQuery() throws SQLException {
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), delegate.executeQuery());
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), delegate.executeQuery());
     }
 
     public ResultSet executeQuery(String sql) throws SQLException {
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), delegate.executeQuery(sql));
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), delegate.executeQuery(sql));
     }
 
     public ResultSet getGeneratedKeys() throws SQLException {
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), delegate.getGeneratedKeys());
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), delegate.getGeneratedKeys());
     }
 
     /* java.sql.Wrapper implementation */

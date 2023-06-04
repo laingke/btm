@@ -15,7 +15,7 @@
  */
 package bitronix.tm.resource.common;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -47,68 +47,77 @@ public interface XAStatefulHolder<T extends XAStatefulHolder<T>> {
          * The state in which the resource is when it out of the pool but not accessible by the application.
          */
         NOT_ACCESSIBLE
-    };
+    }
 
     /**
      * Get the current resource state.
      * <p>This method is thread-safe.</p>
+     *
      * @return the current resource state.
      */
-    public State getState();
+    State getState();
 
     /**
      * Set the current resource state.
      * <p>This method is thread-safe.</p>
+     *
      * @param state the current resource state.
      */
-    public void setState(State state);
+    void setState(State state);
 
     /**
      * Register an implementation of {@link StateChangeListener}.
+     *
      * @param listener the {@link StateChangeListener} implementation to register.
      */
-    public void addStateChangeEventListener(StateChangeListener<T> listener);
+    void addStateChangeEventListener(StateChangeListener<T> listener);
 
     /**
      * Unregister an implementation of {@link StateChangeListener}.
+     *
      * @param listener the {@link StateChangeListener} implementation to unregister.
      */
-    public void removeStateChangeEventListener(StateChangeListener<T> listener);
+    void removeStateChangeEventListener(StateChangeListener<T> listener);
 
     /**
      * Get the list of {@link bitronix.tm.resource.common.XAResourceHolder}s created by this
      * {@link bitronix.tm.resource.common.XAStatefulHolder} that are still open.
      * <p>This method is thread-safe.</p>
+     *
      * @return the list of {@link XAResourceHolder}s created by this
-     *         {@link bitronix.tm.resource.common.XAStatefulHolder} that are still open.
+     * {@link bitronix.tm.resource.common.XAStatefulHolder} that are still open.
      */
-    public List<? extends XAResourceHolder<? extends XAResourceHolder>> getXAResourceHolders();
+    List<? extends XAResourceHolder<? extends XAResourceHolder>> getXAResourceHolders();
 
     /**
      * Create a disposable handler used to drive a pooled instance of
      * {@link bitronix.tm.resource.common.XAStatefulHolder}.
      * <p>This method is thread-safe.</p>
+     *
      * @return a resource-specific disposable connection object.
      * @throws Exception a resource-specific exception thrown when the disposable connection cannot be created.
      */
-    public Object getConnectionHandle() throws Exception;
+    Object getConnectionHandle() throws Exception;
 
     /**
      * Close the physical connection that this {@link bitronix.tm.resource.common.XAStatefulHolder} represents.
+     *
      * @throws Exception a resource-specific exception thrown when there is an error closing the physical connection.
      */
-    public void close() throws Exception;
+    void close() throws Exception;
 
     /**
      * Get the date at which this object was last released to the pool. This is required to check if it is eligible
      * for discard when the containing pool needs to shrink.
+     *
      * @return the date at which this object was last released to the pool or null if it never left the pool.
      */
-    public Date getLastReleaseDate();
+    LocalDateTime getLastReleaseDate();
 
     /**
      * Get the date at which this object was created in the pool.
+     *
      * @return the date at which this object was created in the pool.
      */
-    public Date getCreationDate();
+    LocalDateTime getCreationDate();
 }

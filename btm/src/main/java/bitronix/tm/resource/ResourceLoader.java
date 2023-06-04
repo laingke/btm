@@ -21,19 +21,16 @@ import bitronix.tm.utils.ClassLoaderUtils;
 import bitronix.tm.utils.InitializationException;
 import bitronix.tm.utils.PropertyUtils;
 import bitronix.tm.utils.Service;
+import jakarta.jms.XAConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jms.XAConnectionFactory;
 import javax.sql.XADataSource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
  * XA resources pools configurator &amp; loader.
@@ -47,18 +44,19 @@ import java.util.Properties;
  */
 public class ResourceLoader implements Service {
 
-    private final static Logger log = LoggerFactory.getLogger(ResourceLoader.class);
+    private static final Logger log = LoggerFactory.getLogger(ResourceLoader.class);
 
-    private final static String JDBC_RESOURCE_CLASSNAME = "bitronix.tm.resource.jdbc.PoolingDataSource";
-    private final static String JMS_RESOURCE_CLASSNAME = "bitronix.tm.resource.jms.PoolingConnectionFactory";
+    private static final String JDBC_RESOURCE_CLASSNAME = "bitronix.tm.resource.jdbc.PoolingDataSource";
+    private static final String JMS_RESOURCE_CLASSNAME = "bitronix.tm.resource.jms.PoolingConnectionFactory";
 
-    private final Map<String, XAResourceProducer> resourcesByUniqueName = new HashMap<String, XAResourceProducer>();
+    private final Map<String, XAResourceProducer> resourcesByUniqueName = new HashMap<>();
 
     public ResourceLoader() {
     }
 
     /**
      * Get a Map with the configured uniqueName as key and {@link XAResourceProducer} as value.
+     *
      * @return a Map using the uniqueName as key and {@link XAResourceProducer} as value.
      */
     public Map<String, XAResourceProducer> getResources() {
@@ -68,28 +66,36 @@ public class ResourceLoader implements Service {
     /**
      * Initialize the ResourceLoader and load the resources configuration file specified in
      * <code>bitronix.tm.resource.configuration</code> property.
+     *
      * @return the number of resources which failed to initialize.
      */
     public int init() {
         String filename = TransactionManagerServices.getConfiguration().getResourceConfigurationFilename();
         if (filename != null) {
-            if (!new File(filename).exists())
-                throw new ResourceConfigurationException("cannot find resources configuration file '" + filename +"', missing or invalid value of property 'bitronix.tm.resource.configuration'");
-            log.info("reading resources configuration from " + filename);
+            if (!new File(filename).exists()) {
+                throw new ResourceConfigurationException("cannot find resources configuration file '" + filename + "', missing or invalid value of property 'bitronix.tm.resource.configuration'");
+            }
+            log.info("reading resources configuration from {}", filename);
             return init(filename);
-        }
-        else {
-            if (log.isDebugEnabled()) { log.debug("no resource configuration file specified"); }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("no resource configuration file specified");
+            }
             return 0;
         }
     }
 
     @Override
     public synchronized void shutdown() {
-        if (log.isDebugEnabled()) { log.debug("resource loader has registered " + resourcesByUniqueName.entrySet().size() + " resource(s), unregistering them now"); }
+        if (log.isDebugEnabled()) {
+            log.debug("resource loader has registered {} resource(s), unregistering them now",
+                    resourcesByUniqueName.entrySet().size());
+        }
         for (Map.Entry<String, XAResourceProducer> entry : resourcesByUniqueName.entrySet()) {
             XAResourceProducer producer = entry.getValue();
-            if (log.isDebugEnabled()) { log.debug("closing " + producer); }
+            if (log.isDebugEnabled()) {
+                log.debug("closing {}", producer);
+            }
             try {
                 producer.close();
             } catch (Exception ex) {
@@ -105,13 +111,16 @@ public class ResourceLoader implements Service {
 
     /**
      * Create an unitialized {@link XAResourceProducer} implementation which depends on the XA resource class name.
+     *
      * @param xaResourceClassName an XA resource class name.
      * @return a {@link XAResourceProducer} implementation.
      * @throws ClassNotFoundException if the {@link XAResourceProducer} cannot be instantiated.
      * @throws IllegalAccessException if the {@link XAResourceProducer} cannot be instantiated.
      * @throws InstantiationException if the {@link XAResourceProducer} cannot be instantiated.
      */
-    private static XAResourceProducer instantiate(String xaResourceClassName) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    private static XAResourceProducer instantiate(String xaResourceClassName) throws
+            ClassNotFoundException, IllegalAccessException, InstantiationException,
+            NoSuchMethodException, InvocationTargetException {
         Class<?> clazz = ClassLoaderUtils.loadClass(xaResourceClassName);
 
         // resource classes are instantiated via reflection so that there is no hard class binding between this internal
@@ -119,17 +128,17 @@ public class ResourceLoader implements Service {
         // This allows using the TM with a 100% JDBC application without requiring JMS libraries.
 
         if (XADataSource.class.isAssignableFrom(clazz)) {
-            return (XAResourceProducer) ClassLoaderUtils.loadClass(JDBC_RESOURCE_CLASSNAME).newInstance();
-        }
-        else if (XAConnectionFactory.class.isAssignableFrom(clazz)) {
-            return (XAResourceProducer) ClassLoaderUtils.loadClass(JMS_RESOURCE_CLASSNAME).newInstance();
-        }
-        else
+            return (XAResourceProducer) ClassLoaderUtils.loadClass(JDBC_RESOURCE_CLASSNAME).getDeclaredConstructor().newInstance();
+        } else if (XAConnectionFactory.class.isAssignableFrom(clazz)) {
+            return (XAResourceProducer) ClassLoaderUtils.loadClass(JMS_RESOURCE_CLASSNAME).getDeclaredConstructor().newInstance();
+        } else {
             return null;
+        }
     }
 
     /**
      * Read the resources properties file and create {@link XAResourceProducer} accordingly.
+     *
      * @param propertiesFilename the name of the properties file to load.
      * @return the number of resources which failed to initialize.
      */
@@ -142,7 +151,9 @@ public class ResourceLoader implements Service {
                 properties = new Properties();
                 properties.load(fis);
             } finally {
-                if (fis != null) fis.close();
+                if (fis != null) {
+                    fis.close();
+                }
             }
 
             return initXAResourceProducers(properties);
@@ -153,6 +164,7 @@ public class ResourceLoader implements Service {
 
     /**
      * Initialize {@link XAResourceProducer}s given a set of properties.
+     *
      * @param properties the properties to use for initialization.
      * @return the number of resources which failed to initialize.
      */
@@ -166,11 +178,15 @@ public class ResourceLoader implements Service {
             XAResourceProducer producer = buildXAResourceProducer(uniqueName, propertyPairs);
 
             if (ResourceRegistrar.get(producer.getUniqueName()) != null) {
-                if (log.isDebugEnabled()) { log.debug("resource already registered, skipping it:" + producer.getUniqueName()); }
+                if (log.isDebugEnabled()) {
+                    log.debug("resource already registered, skipping it:" + producer.getUniqueName());
+                }
                 continue;
             }
 
-            if (log.isDebugEnabled()) { log.debug("creating resource " + producer); }
+            if (log.isDebugEnabled()) {
+                log.debug("creating resource " + producer);
+            }
             try {
                 producer.init();
             } catch (ResourceConfigurationException ex) {
@@ -187,11 +203,12 @@ public class ResourceLoader implements Service {
 
     /**
      * Create a map using the configured resource name as the key and a List of PropertyPair objects as the value.
+     *
      * @param properties object to analyze.
      * @return the built map.
      */
     private Map<String, List<PropertyPair>> buildConfigurationEntriesMap(Properties properties) {
-        Map<String, List<PropertyPair>> entries = new HashMap<String, List<PropertyPair>>();
+        Map<String, List<PropertyPair>> entries = new HashMap<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String key = (String) entry.getKey();
             String value = (String) entry.getValue();
@@ -210,11 +227,7 @@ public class ResourceLoader implements Service {
                     }
                 }
 
-                List<PropertyPair> pairs = entries.get(configuredName);
-                if (pairs == null) {
-                    pairs = new ArrayList<PropertyPair>();
-                    entries.put(configuredName, pairs);
-                }
+                List<PropertyPair> pairs = entries.computeIfAbsent(configuredName, k -> new ArrayList<>());
 
                 pairs.add(new PropertyPair(propertyName, value));
             }
@@ -224,8 +237,9 @@ public class ResourceLoader implements Service {
 
     /**
      * Build a populated {@link XAResourceProducer} out of a list of property pairs and the config name.
+     *
      * @param configuredName index name of the config file.
-     * @param propertyPairs the properties attached to this index.
+     * @param propertyPairs  the properties attached to this index.
      * @return a populated {@link XAResourceProducer}.
      * @throws ResourceConfigurationException if the {@link XAResourceProducer} cannot be built.
      */
@@ -240,8 +254,9 @@ public class ResourceLoader implements Service {
 
                 PropertyUtils.setProperty(producer, lastPropertyName, propertyValue);
             }
-            if (producer.getUniqueName() == null)
+            if (producer.getUniqueName() == null) {
                 throw new ResourceConfigurationException("missing mandatory property [uniqueName] of resource [" + configuredName + "] in resources configuration file");
+            }
 
             return producer;
         } catch (ResourceConfigurationException ex) {
@@ -253,22 +268,26 @@ public class ResourceLoader implements Service {
 
     /**
      * Create an unpopulated, uninitialized {@link XAResourceProducer} instance depending on the className value.
+     *
      * @param configuredName the properties configured name.
-     * @param propertyPairs a list of {@link PropertyPair}s.
+     * @param propertyPairs  a list of {@link PropertyPair}s.
      * @return a {@link XAResourceProducer}.
      * @throws ClassNotFoundException if the {@link XAResourceProducer} cannot be instantiated.
      * @throws IllegalAccessException if the {@link XAResourceProducer} cannot be instantiated.
      * @throws InstantiationException if the {@link XAResourceProducer} cannot be instantiated.
      */
-    private XAResourceProducer createBean(String configuredName, List<PropertyPair> propertyPairs) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    private XAResourceProducer createBean(String configuredName, List<PropertyPair> propertyPairs) throws
+            ClassNotFoundException, IllegalAccessException, InstantiationException,
+            InvocationTargetException, NoSuchMethodException {
         for (PropertyPair propertyPair : propertyPairs) {
             if (propertyPair.getName().equals("className")) {
                 String className = propertyPair.getValue();
                 XAResourceProducer producer = instantiate(className);
-                if (producer == null)
+                if (producer == null) {
                     throw new ResourceConfigurationException("property [className] " +
                             "of resource [" + configuredName + "] in resources configuration file " +
                             "must be the name of a class implementing either javax.sql.XADataSource or javax.jms.XAConnectionFactory");
+                }
                 return producer;
             }
         }

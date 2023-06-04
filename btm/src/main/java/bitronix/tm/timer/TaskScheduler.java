@@ -25,7 +25,10 @@ import bitronix.tm.utils.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedSet;
@@ -41,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class TaskScheduler extends Thread implements Service {
 
-    private final static Logger log = LoggerFactory.getLogger(TaskScheduler.class);
+    private static final Logger log = LoggerFactory.getLogger(TaskScheduler.class);
 
     private final SortedSet<Task> tasks;
     private final Lock tasksLock;
@@ -57,14 +60,18 @@ public class TaskScheduler extends Thread implements Service {
         Lock tasksLock;
         try {
             @SuppressWarnings("unchecked")
-            Class<SortedSet<Task>> clazz = ClassLoaderUtils.loadClass("java.util.concurrent.ConcurrentSkipListSet");
-            tasks = clazz.newInstance();
+            Class<SortedSet<Task>> clazz = (Class<SortedSet<Task>>) ClassLoaderUtils.loadClass("java.util.concurrent.ConcurrentSkipListSet");
+            tasks = clazz.getDeclaredConstructor().newInstance();
             tasksLock = null;
-            if (log.isDebugEnabled()) { log.debug("task scheduler backed by ConcurrentSkipListSet"); }
+            if (log.isDebugEnabled()) {
+                log.debug("task scheduler backed by ConcurrentSkipListSet");
+            }
         } catch (Exception e) {
-            tasks = new TreeSet<Task>();
+            tasks = new TreeSet<>();
             tasksLock = new ReentrantLock();
-            if (log.isDebugEnabled()) { log.debug("task scheduler backed by locked TreeSet"); }
+            if (log.isDebugEnabled()) {
+                log.debug("task scheduler backed by locked TreeSet");
+            }
         }
         this.tasks = tasks;
         this.tasksLock = tasksLock;
@@ -92,6 +99,7 @@ public class TaskScheduler extends Thread implements Service {
 
     /**
      * Get the amount of tasks currently queued.
+     *
      * @return the amount of tasks currently queued.
      */
     public int countTasksQueued() {
@@ -109,11 +117,13 @@ public class TaskScheduler extends Thread implements Service {
 
         if (wasActive) {
             try {
-                long gracefulShutdownTime = TransactionManagerServices.getConfiguration().getGracefulShutdownInterval() * 1000;
-                if (log.isDebugEnabled()) { log.debug("graceful scheduler shutdown interval: " + gracefulShutdownTime + "ms"); }
-                join(gracefulShutdownTime);
+                Duration gracefulShutdownTime = TransactionManagerServices.getConfiguration().getGracefulShutdownInterval();
+                if (log.isDebugEnabled()) {
+                    log.debug("graceful scheduler shutdown interval: {}", gracefulShutdownTime);
+                }
+                join(gracefulShutdownTime.toMillis());
             } catch (InterruptedException ex) {
-                log.error("could not stop the task scheduler within " + TransactionManagerServices.getConfiguration().getGracefulShutdownInterval() + "s");
+                log.error("could not stop the task scheduler within {}", TransactionManagerServices.getConfiguration().getGracefulShutdownInterval());
             }
         }
     }
@@ -121,89 +131,129 @@ public class TaskScheduler extends Thread implements Service {
     /**
      * Schedule a task that will mark the transaction as timed out at the specified date. If this method is called
      * with the same transaction multiple times, the previous timeout date is dropped and replaced by the new one.
-     * @param transaction the transaction to mark as timeout.
+     *
+     * @param transaction   the transaction to mark as timeout.
      * @param executionTime the date at which the transaction must be marked.
      */
-    public void scheduleTransactionTimeout(BitronixTransaction transaction, Date executionTime) {
-        if (log.isDebugEnabled()) { log.debug("scheduling transaction timeout task on " + transaction + " for " + executionTime); }
-        if (transaction == null)
+    public void scheduleTransactionTimeout(BitronixTransaction transaction, LocalDateTime executionTime) {
+        if (log.isDebugEnabled()) {
+            log.debug("scheduling transaction timeout task on " + transaction + " for " + executionTime);
+        }
+        if (transaction == null) {
             throw new IllegalArgumentException("expected a non-null transaction");
-        if (executionTime == null)
+        }
+        if (executionTime == null) {
             throw new IllegalArgumentException("expected a non-null execution date");
+        }
 
         TransactionTimeoutTask task = new TransactionTimeoutTask(transaction, executionTime, this);
         addTask(task);
-        if (log.isDebugEnabled()) { log.debug("scheduled " + task + ", total task(s) queued: " + countTasksQueued()); }
+        if (log.isDebugEnabled()) {
+            log.debug("scheduled " + task + ", total task(s) queued: " + countTasksQueued());
+        }
     }
 
     /**
      * Cancel the task that will mark the transaction as timed out at the specified date.
+     *
      * @param transaction the transaction to mark as timeout.
      */
     public void cancelTransactionTimeout(BitronixTransaction transaction) {
-        if (log.isDebugEnabled()) { log.debug("cancelling transaction timeout task on " + transaction); }
-        if (transaction == null)
+        if (log.isDebugEnabled()) {
+            log.debug("cancelling transaction timeout task on " + transaction);
+        }
+        if (transaction == null) {
             throw new IllegalArgumentException("expected a non-null transaction");
+        }
 
-        if (!removeTaskByObject(transaction))
-            if (log.isDebugEnabled()) { log.debug("no task found based on object " + transaction); }
+        if (!removeTaskByObject(transaction)) {
+            if (log.isDebugEnabled()) {
+                log.debug("no task found based on object " + transaction);
+            }
+        }
     }
 
     /**
      * Schedule a task that will run background recovery at the specified date.
-     * @param recoverer the recovery implementation to use.
+     *
+     * @param recoverer     the recovery implementation to use.
      * @param executionTime the date at which the transaction must be marked.
      */
-    public void scheduleRecovery(Recoverer recoverer, Date executionTime) {
-        if (log.isDebugEnabled()) { log.debug("scheduling recovery task for " + executionTime); }
-        if (recoverer == null)
+    public void scheduleRecovery(Recoverer recoverer, LocalDateTime executionTime) {
+        if (log.isDebugEnabled()) {
+            log.debug("scheduling recovery task for {}", executionTime);
+        }
+        if (recoverer == null) {
             throw new IllegalArgumentException("expected a non-null recoverer");
-        if (executionTime == null)
+        }
+        if (executionTime == null) {
             throw new IllegalArgumentException("expected a non-null execution date");
+        }
 
         RecoveryTask task = new RecoveryTask(recoverer, executionTime, this);
         addTask(task);
-        if (log.isDebugEnabled()) { log.debug("scheduled " + task + ", total task(s) queued: " + countTasksQueued()); }
+        if (log.isDebugEnabled()) {
+            log.debug("scheduled " + task + ", total task(s) queued: " + countTasksQueued());
+        }
     }
 
     /**
      * Cancel the task that will run background recovery at the specified date.
+     *
      * @param recoverer the recovery implementation to use.
      */
     public void cancelRecovery(Recoverer recoverer) {
-        if (log.isDebugEnabled()) { log.debug("cancelling recovery task"); }
+        if (log.isDebugEnabled()) {
+            log.debug("cancelling recovery task");
+        }
 
-        if (!removeTaskByObject(recoverer))
-            if (log.isDebugEnabled()) { log.debug("no task found based on object " + recoverer); }
+        if (!removeTaskByObject(recoverer)) {
+            if (log.isDebugEnabled()) {
+                log.debug("no task found based on object " + recoverer);
+            }
+        }
     }
 
     /**
      * Schedule a task that will tell a XA pool to close idle connections. The execution time will be provided by the
      * XA pool itself via the {@link bitronix.tm.resource.common.XAPool#getNextShrinkDate()}.
+     *
      * @param xaPool the XA pool to notify.
      */
     public void schedulePoolShrinking(XAPool xaPool) {
-        Date executionTime = xaPool.getNextShrinkDate();
-        if (log.isDebugEnabled()) { log.debug("scheduling pool shrinking task on " + xaPool + " for " + executionTime); }
-        if (executionTime == null)
+        LocalDateTime executionTime = xaPool.getNextShrinkDate();
+        if (log.isDebugEnabled()) {
+            log.debug("scheduling pool shrinking task on " + xaPool + " for " + executionTime);
+        }
+        if (executionTime == null) {
             throw new IllegalArgumentException("expected a non-null execution date");
+        }
 
         PoolShrinkingTask task = new PoolShrinkingTask(xaPool, executionTime, this);
         addTask(task);
-        if (log.isDebugEnabled()) { log.debug("scheduled " + task + ", total task(s) queued: " + tasks.size()); }
+        if (log.isDebugEnabled()) {
+            log.debug("scheduled " + task + ", total task(s) queued: " + tasks.size());
+        }
     }
 
     /**
      * Cancel the task that will tell a XA pool to close idle connections.
+     *
      * @param xaPool the XA pool to notify.
      */
     public void cancelPoolShrinking(XAPool xaPool) {
-        if (log.isDebugEnabled()) { log.debug("cancelling pool shrinking task on " + xaPool); }
-        if (xaPool == null)
+        if (log.isDebugEnabled()) {
+            log.debug("cancelling pool shrinking task on " + xaPool);
+        }
+        if (xaPool == null) {
             throw new IllegalArgumentException("expected a non-null XA pool");
+        }
 
-        if (!removeTaskByObject(xaPool))
-            if (log.isDebugEnabled()) { log.debug("no task found based on object " + xaPool); }
+        if (!removeTaskByObject(xaPool)) {
+            if (log.isDebugEnabled()) {
+                log.debug("no task found based on object " + xaPool);
+            }
+        }
     }
 
     void addTask(Task task) {
@@ -219,12 +269,16 @@ public class TaskScheduler extends Thread implements Service {
     boolean removeTaskByObject(Object obj) {
         lock();
         try {
-            if (log.isDebugEnabled()) { log.debug("removing task by " + obj); }
+            if (log.isDebugEnabled()) {
+                log.debug("removing task by " + obj);
+            }
 
             for (Task task : tasks) {
                 if (task.getObject() == obj) {
                     tasks.remove(task);
-                    if (log.isDebugEnabled()) { log.debug("cancelled " + task + ", total task(s) still queued: " + tasks.size()); }
+                    if (log.isDebugEnabled()) {
+                        log.debug("cancelled " + task + ", total task(s) still queued: " + tasks.size());
+                    }
                     return true;
                 }
             }
@@ -257,22 +311,29 @@ public class TaskScheduler extends Thread implements Service {
     private void executeElapsedTasks() {
         lock();
         try {
-            if (this.tasks.isEmpty())
+            if (this.tasks.isEmpty()) {
                 return;
+            }
 
-            Set<Task> toRemove = new HashSet<Task>();
+            Set<Task> toRemove = new HashSet<>();
             for (Task task : getSafeIterableTasks()) {
-                if (task.getExecutionTime().compareTo(new Date(MonotonicClock.currentTimeMillis())) <= 0) {
+                if (task.getExecutionTime().compareTo(Instant.ofEpochMilli(MonotonicClock.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime()) <= 0) {
                     // if the execution time is now or in the past
-                    if (log.isDebugEnabled()) { log.debug("running " + task); }
+                    if (log.isDebugEnabled()) {
+                        log.debug("running " + task);
+                    }
                     try {
                         task.execute();
-                        if (log.isDebugEnabled()) { log.debug("successfully ran " + task); }
+                        if (log.isDebugEnabled()) {
+                            log.debug("successfully ran " + task);
+                        }
                     } catch (Exception ex) {
                         log.warn("error running " + task, ex);
                     } finally {
                         toRemove.add(task);
-                        if (log.isDebugEnabled()) { log.debug("total task(s) still queued: " + tasks.size()); }
+                        if (log.isDebugEnabled()) {
+                            log.debug("total task(s) still queued: " + tasks.size());
+                        }
                     }
                 } // if
             }

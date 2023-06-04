@@ -34,7 +34,6 @@ public interface ReadableJournal {
      * a subset of data is required, the given collection should take care to capture the required data.</li>
      * </ul>
      *
-     *
      * @param target         the target collection to read the records into.
      * @param includeInvalid specified whether broken records are attempted to be included.
      * @throws java.io.IOException In case of reading the first record fails.

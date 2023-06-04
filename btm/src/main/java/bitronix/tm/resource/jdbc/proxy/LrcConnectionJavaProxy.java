@@ -28,7 +28,7 @@ import java.util.Map;
  */
 public class LrcConnectionJavaProxy extends JavaProxyBase<Connection> {
 
-    private final static Map<String, Method> selfMethodMap = createMethodMap(LrcConnectionJavaProxy.class);
+    private static final Map<String, Method> selfMethodMap = createMethodMap(LrcConnectionJavaProxy.class);
 
     private final LrcXAResource xaResource;
 
@@ -57,26 +57,30 @@ public class LrcConnectionJavaProxy extends JavaProxyBase<Connection> {
     }
 
     public void setAutoCommit(boolean autoCommit) throws SQLException {
-        if (xaResource.getState() != LrcXAResource.NO_TX && autoCommit)
+        if (xaResource.getState() != LrcXAResource.NO_TX && autoCommit) {
             throw new SQLException("XA transaction started, cannot enable autocommit mode");
+        }
         delegate.setAutoCommit(autoCommit);
     }
 
     public void commit() throws SQLException {
-        if (xaResource.getState() != LrcXAResource.NO_TX)
+        if (xaResource.getState() != LrcXAResource.NO_TX) {
             throw new SQLException("XA transaction started, cannot call commit directly on connection");
+        }
         delegate.commit();
     }
 
     public void rollback() throws SQLException {
-        if (xaResource.getState() != LrcXAResource.NO_TX)
+        if (xaResource.getState() != LrcXAResource.NO_TX) {
             throw new SQLException("XA transaction started, cannot call rollback directly on connection");
+        }
         delegate.rollback();
     }
 
     public void rollback(Savepoint savepoint) throws SQLException {
-        if (xaResource.getState() != LrcXAResource.NO_TX)
+        if (xaResource.getState() != LrcXAResource.NO_TX) {
             throw new SQLException("XA transaction started, cannot call rollback directly on connection");
+        }
         delegate.rollback(savepoint);
     }
 

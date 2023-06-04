@@ -21,14 +21,17 @@ public class PoolingDataSourceFactoryBean extends ResourceBean implements Factor
 
     private PoolingDataSource ds;
 
+    @Override
     public Class<PoolingDataSource> getObjectType() {
         return PoolingDataSource.class;
     }
 
+    @Override
     public boolean isSingleton() {
         return true;
     }
 
+    @Override
     public PoolingDataSource getObject() throws Exception {
         if (ds == null) {
             ds = new PoolingDataSource();
@@ -41,6 +44,7 @@ public class PoolingDataSourceFactoryBean extends ResourceBean implements Factor
         return ds;
     }
 
+    @Override
     public void destroy() throws Exception {
         if (ds != null) {
             log.debug("Closing PoolingDataSource with id '{}'", ds.getUniqueName());

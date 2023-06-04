@@ -15,14 +15,18 @@
  */
 package bitronix.tm.utils;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class EncoderTest extends TestCase {
+public class EncoderTest {
 
+    @Test
     public void testLongEncodingDecoding() {
         byte[] longAsBytes;
         long result;

@@ -1,13 +1,10 @@
 package bitronix.tm.integration.spring;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertFalse;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Iterator;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.sql.DataSource;
 import javax.transaction.xa.XAResource;
 
@@ -20,6 +17,9 @@ import bitronix.tm.mock.events.XAResourceCommitEvent;
 import bitronix.tm.mock.events.XAResourceEndEvent;
 import bitronix.tm.mock.events.XAResourcePrepareEvent;
 import bitronix.tm.mock.events.XAResourceStartEvent;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TransactionalBean {
     

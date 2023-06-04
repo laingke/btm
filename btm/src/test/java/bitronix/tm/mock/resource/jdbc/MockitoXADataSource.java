@@ -15,13 +15,8 @@
  */
 package bitronix.tm.mock.resource.jdbc;
 
-import bitronix.tm.mock.events.ConnectionCloseEvent;
-import bitronix.tm.mock.events.EventRecorder;
-import bitronix.tm.mock.events.LocalCommitEvent;
-import bitronix.tm.mock.events.LocalRollbackEvent;
-import bitronix.tm.mock.events.XAConnectionCloseEvent;
+import bitronix.tm.mock.events.*;
 import bitronix.tm.mock.resource.MockXAResource;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import javax.sql.XAConnection;
@@ -29,38 +24,27 @@ import javax.sql.XADataSource;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 import java.io.PrintWriter;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyObject;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
- *
  * @author Ludovic Orban
  */
 public class MockitoXADataSource implements XADataSource {
 
-    private List<XAConnection> xaConnections = new ArrayList<XAConnection>();
+    private List<XAConnection> xaConnections = new ArrayList<>();
     private String userName;
     private String password;
     private String database;
     private Object uselessThing;
     private Properties clonedProperties;
-    private final List<Xid> inDoubtXids = new ArrayList<Xid>();
+    private final List<Xid> inDoubtXids = new ArrayList<>();
     private SQLException getXAConnectionException;
     private static SQLException staticGetXAConnectionException;
     private static SQLException staticCloseXAConnectionException;
@@ -97,24 +81,16 @@ public class MockitoXADataSource implements XADataSource {
         // Setup mock XAConnection
         final XAConnection mockXAConnection = mock(XAConnection.class);
         // Handle XAConnection.close(), first time we answer, after that we throw
-        doAnswer(new Answer<Object>() {
-            @Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				EventRecorder eventRecorder = EventRecorder.getEventRecorder(mockXAConnection);
-				eventRecorder.addEvent(new XAConnectionCloseEvent(mockXAConnection));
-				return null;
-			}
-		}).doThrow(new SQLException("XAConnection is already closed")).when(mockXAConnection).close();
+        doAnswer((Answer<Object>) invocation -> {
+            EventRecorder eventRecorder = EventRecorder.getEventRecorder(mockXAConnection);
+            eventRecorder.addEvent(new XAConnectionCloseEvent(mockXAConnection));
+            return null;
+        }).doThrow(new SQLException("XAConnection is already closed")).when(mockXAConnection).close();
 
         when(mockXAConnection.getXAResource()).thenReturn(xaResource);
 //        Connection mockConnection = createMockConnection();
 //        when(mockXAConnection.getConnection()).thenReturn(mockConnection);
-        doAnswer(new Answer<Connection>() {
-            @Override
-			public Connection answer(InvocationOnMock invocation) throws Throwable {
-				return createMockConnection();
-			}
-		}).when(mockXAConnection).getConnection();
+        doAnswer((Answer<Connection>) invocation -> createMockConnection()).when(mockXAConnection).getConnection();
 
         if (staticCloseXAConnectionException != null)
             doThrow(staticCloseXAConnectionException).when(mockXAConnection).close();
@@ -171,7 +147,7 @@ public class MockitoXADataSource implements XADataSource {
     public boolean removeInDoubtXid(Xid xid) {
         for (int i = 0; i < inDoubtXids.size(); i++) {
             Xid xid1 = inDoubtXids.get(i);
-            if (Arrays.equals(xid1.getGlobalTransactionId(), xid.getGlobalTransactionId()) && Arrays.equals(xid1.getBranchQualifier(), xid.getBranchQualifier()) ) {
+            if (Arrays.equals(xid1.getGlobalTransactionId(), xid.getGlobalTransactionId()) && Arrays.equals(xid1.getBranchQualifier(), xid.getBranchQualifier())) {
                 inDoubtXids.remove(xid1);
                 return true;
             }
@@ -210,8 +186,8 @@ public class MockitoXADataSource implements XADataSource {
         // Handle Connection.prepareStatement()
         when(mockConnection.prepareStatement(anyString())).thenAnswer(mockPreparedStatement());
         when(mockConnection.prepareStatement(anyString(), anyInt())).thenAnswer(mockPreparedStatement());
-        when(mockConnection.prepareStatement(anyString(), (int[]) anyObject())).thenAnswer(mockPreparedStatement());
-        when(mockConnection.prepareStatement(anyString(), (String[]) anyObject())).thenAnswer(mockPreparedStatement());
+        when(mockConnection.prepareStatement(anyString(), (int[]) any())).thenAnswer(mockPreparedStatement());
+        when(mockConnection.prepareStatement(anyString(), (String[]) any())).thenAnswer(mockPreparedStatement());
         when(mockConnection.prepareStatement(anyString(), anyInt(), anyInt())).thenAnswer(mockPreparedStatement());
         when(mockConnection.prepareStatement(anyString(), anyInt(), anyInt(), anyInt())).thenAnswer(mockPreparedStatement());
 
@@ -221,33 +197,24 @@ public class MockitoXADataSource implements XADataSource {
         when(mockConnection.prepareCall(anyString(), anyInt(), anyInt(), anyInt())).thenAnswer(mockCallableStatement());
 
         // Handle Connection.close()
-        doAnswer(new Answer() {
-            @Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				EventRecorder eventRecorder = EventRecorder.getEventRecorder(mockConnection);
-				eventRecorder.addEvent(new ConnectionCloseEvent(mockConnection));
-				return null;
-			}
+        doAnswer(invocation -> {
+            EventRecorder eventRecorder = EventRecorder.getEventRecorder(mockConnection);
+            eventRecorder.addEvent(new ConnectionCloseEvent(mockConnection));
+            return null;
         }).doThrow(new SQLException("Connection is already closed")).when(mockConnection).close();
 
         // Handle Connection.commit()
-        doAnswer(new Answer() {
-            @Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				EventRecorder eventRecorder = EventRecorder.getEventRecorder(mockConnection);
-				eventRecorder.addEvent(new LocalCommitEvent(mockConnection, new Exception()));
-				return null;
-			}
+        doAnswer(invocation -> {
+            EventRecorder eventRecorder = EventRecorder.getEventRecorder(mockConnection);
+            eventRecorder.addEvent(new LocalCommitEvent(mockConnection, new Exception()));
+            return null;
         }).doThrow(new SQLException("Transaction already commited")).when(mockConnection).commit();
 
         // Handle Connection.rollback()
-        doAnswer(new Answer() {
-            @Override
-			public Object answer(InvocationOnMock invocation) throws Throwable {
-				EventRecorder eventRecorder = EventRecorder.getEventRecorder(mockConnection);
-				eventRecorder.addEvent(new LocalRollbackEvent(mockConnection, new Exception()));
-				return null;
-			}
+        doAnswer(invocation -> {
+            EventRecorder eventRecorder = EventRecorder.getEventRecorder(mockConnection);
+            eventRecorder.addEvent(new LocalRollbackEvent(mockConnection, new Exception()));
+            return null;
         }).doThrow(new SQLException("Transaction already rolledback")).when(mockConnection).rollback();
 
         return mockConnection;
@@ -262,33 +229,18 @@ public class MockitoXADataSource implements XADataSource {
     }
 
     private static Answer<Statement> mockStatement() {
-        return new Answer<Statement>() {
-            @Override
-            public Statement answer(InvocationOnMock invocation) throws Throwable {
-                return mock(Statement.class);
-            }
-        };
+        return invocation -> mock(Statement.class);
     }
 
     private static Answer<PreparedStatement> mockPreparedStatement() {
-        return new Answer<PreparedStatement>() {
-            @Override
-            public PreparedStatement answer(InvocationOnMock invocation) throws Throwable {
-                return mock(PreparedStatement.class);
-            }
-        };
+        return invocation -> mock(PreparedStatement.class);
     }
 
     private static Answer<CallableStatement> mockCallableStatement() {
-        return new Answer<CallableStatement>() {
-            @Override
-            public CallableStatement answer(InvocationOnMock invocation) throws Throwable {
-                return mock(CallableStatement.class);
-            }
-        };
+        return invocation -> mock(CallableStatement.class);
     }
-    
-	public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		throw new SQLFeatureNotSupportedException();
-	}
+
+    public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
+        throw new SQLFeatureNotSupportedException();
+    }
 }

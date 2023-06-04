@@ -19,15 +19,16 @@ import bitronix.tm.resource.common.AbstractXAResourceHolder;
 import bitronix.tm.resource.common.ResourceBean;
 
 import javax.transaction.xa.XAResource;
+import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 /**
  * Ehcache implementation of BTM's XAResourceHolder.
  * <p>
- *   Copyright 2003-2010 Terracotta, Inc.
+ * Copyright 2003-2010 Terracotta, Inc.
  * </p>
+ *
  * @author Ludovic Orban
  */
 public class EhCacheXAResourceHolder extends AbstractXAResourceHolder<EhCacheXAResourceHolder> {
@@ -37,8 +38,9 @@ public class EhCacheXAResourceHolder extends AbstractXAResourceHolder<EhCacheXAR
 
     /**
      * Create a new EhCacheXAResourceHolder for a particular XAResource
+     *
      * @param resource the required XAResource
-     * @param bean the required ResourceBean
+     * @param bean     the required ResourceBean
      */
     public EhCacheXAResourceHolder(XAResource resource, ResourceBean bean) {
         this.resource = resource;
@@ -81,7 +83,7 @@ public class EhCacheXAResourceHolder extends AbstractXAResourceHolder<EhCacheXAR
      * {@inheritDoc}
      */
     @Override
-    public Date getLastReleaseDate() {
+    public LocalDateTime getLastReleaseDate() {
         throw new UnsupportedOperationException("EhCacheXAResourceHolder cannot be used with an XAPool");
     }
 

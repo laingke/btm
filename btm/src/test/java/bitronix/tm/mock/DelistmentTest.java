@@ -19,47 +19,44 @@ import bitronix.tm.BitronixTransactionManager;
 import bitronix.tm.TransactionManagerServices;
 import bitronix.tm.internal.BitronixXAException;
 import bitronix.tm.journal.Journal;
-import bitronix.tm.mock.events.EventRecorder;
-import bitronix.tm.mock.events.JournalLogEvent;
-import bitronix.tm.mock.events.XAResourceEndEvent;
-import bitronix.tm.mock.events.XAResourceRollbackEvent;
-import bitronix.tm.mock.events.XAResourceStartEvent;
+import bitronix.tm.mock.events.*;
 import bitronix.tm.mock.resource.MockJournal;
 import bitronix.tm.mock.resource.MockXAResource;
 import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
 import bitronix.tm.resource.ResourceRegistrar;
 import bitronix.tm.resource.jdbc.PooledConnectionProxy;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.XAConnection;
-import javax.transaction.RollbackException;
-import javax.transaction.Status;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Status;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import java.lang.reflect.Field;
 import java.sql.Connection;
-import java.util.Iterator;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.*;
 
-public class DelistmentTest extends TestCase {
+public class DelistmentTest {
     private final static Logger log = LoggerFactory.getLogger(DelistmentTest.class);
 
     private PoolingDataSource poolingDataSource1;
     private PoolingDataSource poolingDataSource2;
     private BitronixTransactionManager btm;
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
         EventRecorder.clear();
 
-        Iterator<String> it = ResourceRegistrar.getResourcesUniqueNames().iterator();
-        while (it.hasNext()) {
-            String name = it.next();
+        for (String name : ResourceRegistrar.getResourcesUniqueNames()) {
             ResourceRegistrar.unregister(ResourceRegistrar.get(name));
         }
 
@@ -86,18 +83,19 @@ public class DelistmentTest extends TestCase {
         poolingDataSource2.setAutomaticEnlistingEnabled(true);
         poolingDataSource2.init();
 
-        TransactionManagerServices.getConfiguration().setGracefulShutdownInterval(3);
+        TransactionManagerServices.getConfiguration().setGracefulShutdownInterval(Duration.ofSeconds(3L));
 
         btm = TransactionManagerServices.getTransactionManager();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         poolingDataSource1.close();
         poolingDataSource2.close();
         btm.shutdown();
     }
 
+    @Test
     public void testDelistErrorOnCommit() throws Exception {
         btm.begin();
 
@@ -124,7 +122,7 @@ public class DelistmentTest extends TestCase {
         }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(9, orderedEvents.size());
@@ -136,10 +134,11 @@ public class DelistmentTest extends TestCase {
         assertEquals(Status.STATUS_MARKED_ROLLBACK, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(XAResource.TMSUCCESS, ((XAResourceEndEvent) orderedEvents.get(i++)).getFlag());
         assertEquals(Status.STATUS_ROLLING_BACK, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertTrue(((XAResourceRollbackEvent) orderedEvents.get(i++)).getSource() == xaResource2);
+        assertSame(((XAResourceRollbackEvent) orderedEvents.get(i++)).getSource(), xaResource2);
         assertEquals(Status.STATUS_ROLLEDBACK, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
     }
 
+    @Test
     public void testDelistUnilateralRollbackOnCommit() throws Exception {
         btm.begin();
 
@@ -166,7 +165,7 @@ public class DelistmentTest extends TestCase {
         }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(9, orderedEvents.size());
@@ -178,10 +177,11 @@ public class DelistmentTest extends TestCase {
         assertEquals(Status.STATUS_MARKED_ROLLBACK, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(XAResource.TMSUCCESS, ((XAResourceEndEvent) orderedEvents.get(i++)).getFlag());
         assertEquals(Status.STATUS_ROLLING_BACK, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertTrue(((XAResourceRollbackEvent) orderedEvents.get(i++)).getSource() == xaResource2);
+        assertSame(orderedEvents.get(i++).getSource(), xaResource2);
         assertEquals(Status.STATUS_ROLLEDBACK, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
     }
 
+    @Test
     public void testDelistErrorAndUnilateralRollbackOnCommit() throws Exception {
         btm.begin();
 
@@ -214,7 +214,7 @@ public class DelistmentTest extends TestCase {
         }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(8, orderedEvents.size());
@@ -229,6 +229,7 @@ public class DelistmentTest extends TestCase {
         assertEquals(Status.STATUS_ROLLEDBACK, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
     }
 
+    @Test
     public void testDelistErrorAndUnilateralRollbackOnRollback() throws Exception {
         btm.begin();
 
@@ -255,7 +256,7 @@ public class DelistmentTest extends TestCase {
         log.info(EventRecorder.dumpToString());
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(8, orderedEvents.size());

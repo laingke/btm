@@ -17,22 +17,26 @@ package bitronix.tm.resource;
 
 import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
 import bitronix.tm.mock.resource.jms.MockXAConnectionFactory;
+import bitronix.tm.resource.common.XAResourceProducer;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
 import bitronix.tm.resource.jms.PoolingConnectionFactory;
 import bitronix.tm.utils.PropertyUtils;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import javax.sql.XADataSource;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 /**
  *
  * @author Ludovic Orban
  */
-public class ResourceLoaderTest extends TestCase {
+public class ResourceLoaderTest {
 
+    @Test
     public void testBindOneJdbc() throws Exception {
         ResourceLoader loader = new ResourceLoader();
 
@@ -73,6 +77,7 @@ public class ResourceLoaderTest extends TestCase {
     }
 
 
+    @Test
     public void testDecryptPassword() throws Exception {
         ResourceLoader loader = new ResourceLoader();
 
@@ -89,7 +94,7 @@ public class ResourceLoaderTest extends TestCase {
 
 
         loader.initXAResourceProducers(p);
-        Map dataSources = loader.getResources();
+        Map<String, XAResourceProducer> dataSources = loader.getResources();
 
         assertEquals(1, dataSources.size());
         String uniqueName = (String) dataSources.keySet().iterator().next();
@@ -109,6 +114,7 @@ public class ResourceLoaderTest extends TestCase {
         return (XADataSource) field.get(poolingDataSource);
     }
 
+    @Test
     public void testBindOneJms() throws Exception {
         ResourceLoader loader = new ResourceLoader();
 
@@ -123,10 +129,10 @@ public class ResourceLoaderTest extends TestCase {
 
 
         loader.initXAResourceProducers(p);
-        Map dataSources = loader.getResources();
+        Map<String, XAResourceProducer> dataSources = loader.getResources();
 
         assertEquals(1, dataSources.size());
-        String uniqueName = (String) dataSources.keySet().iterator().next();
+        String uniqueName = dataSources.keySet().iterator().next();
         assertEquals("mq1", uniqueName);
         PoolingConnectionFactory pcf = (PoolingConnectionFactory) dataSources.get(uniqueName);
         assertEquals("bitronix.tm.mock.resource.jms.MockXAConnectionFactory", pcf.getClassName());
@@ -136,6 +142,7 @@ public class ResourceLoaderTest extends TestCase {
 
     }
 
+    @Test
     public void testBind2WithSomeDefaults() throws Exception {
         ResourceLoader loader = new ResourceLoader();
 
@@ -168,12 +175,13 @@ public class ResourceLoaderTest extends TestCase {
         assertEquals("bitronix.tm.mock.resource.jdbc.MockitoXADataSource", pds.getClassName());
         assertEquals("some.unique.Name", pds.getUniqueName());
         assertEquals(123, pds.getMaxPoolSize());
-        assertEquals(true, pds.getDeferConnectionRelease());
-        assertEquals(true, pds.getAutomaticEnlistingEnabled());
-        assertEquals(true, pds.getUseTmJoin());
+        assertTrue(pds.getDeferConnectionRelease());
+        assertTrue(pds.getAutomaticEnlistingEnabled());
+        assertTrue(pds.getUseTmJoin());
         assertEquals(0, pds.getDriverProperties().size());
     }
 
+    @Test
     public void testConfigErrors() throws Exception {
         ResourceLoader loader = new ResourceLoader();
 
@@ -217,6 +225,7 @@ public class ResourceLoaderTest extends TestCase {
         loader.initXAResourceProducers(p);
     }
 
+    @Test
     public void testFormatErrors() throws Exception {
         ResourceLoader loader = new ResourceLoader();
 

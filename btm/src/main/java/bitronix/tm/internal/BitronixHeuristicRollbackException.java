@@ -15,15 +15,15 @@
  */
 package bitronix.tm.internal;
 
-import javax.transaction.HeuristicRollbackException;
+import jakarta.transaction.HeuristicRollbackException;
 
 /**
- * Subclass of {@link javax.transaction.HeuristicRollbackException} supporting nested {@link Throwable}s.
+ * Subclass of {@link jakarta.transaction.HeuristicRollbackException} supporting nested {@link Throwable}s.
  *
  * @author Ludovic Orban
  */
 public class BitronixHeuristicRollbackException extends HeuristicRollbackException {
-    
+
     public BitronixHeuristicRollbackException(String string) {
         super(string);
     }

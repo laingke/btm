@@ -17,11 +17,14 @@ package bitronix.tm.resource.jdbc.proxy;
 
 import bitronix.tm.resource.jdbc.JdbcPooledConnection;
 import bitronix.tm.resource.jdbc.LruStatementCache.CacheKey;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Test;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -35,7 +38,7 @@ public class PreparedStatementJavaProxyTest {
     private JdbcPooledConnection connection;
     private PreparedStatement stmt;
 
-    @Before
+    @BeforeEach
     public void setup() {
         connection = mock(JdbcPooledConnection.class);
         stmt = mock(PreparedStatement.class);

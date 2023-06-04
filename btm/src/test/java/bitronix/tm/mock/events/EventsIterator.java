@@ -33,9 +33,7 @@ public class EventsIterator implements Iterator<Event> {
         nextEvents = new Event[size];
 
         int i = 0;
-        Iterator<Map.Entry<Object, EventRecorder>> it = eventRecorders.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<Object, EventRecorder> entry = it.next();
+        for (Map.Entry<Object, EventRecorder> entry : eventRecorders.entrySet()) {
             EventRecorder er = entry.getValue();
             eventRecorderIterators[i] = er.getEvents().iterator();
             if (eventRecorderIterators[i].hasNext())
@@ -50,8 +48,7 @@ public class EventsIterator implements Iterator<Event> {
 
     @Override
     public boolean hasNext() {
-        for (int i = 0; i < nextEvents.length; i++) {
-            Event nextEvent = nextEvents[i];
+        for (Event nextEvent : nextEvents) {
             if (nextEvent != null)
                 return true;
         }

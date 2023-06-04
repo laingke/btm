@@ -31,6 +31,7 @@ public final class MonotonicClock {
 
     /**
      * Return the current time in milliseconds, guaranteeing monotonic time increment.
+     *
      * @return the current time in milliseconds.
      */
     public static long currentTimeMillis() {

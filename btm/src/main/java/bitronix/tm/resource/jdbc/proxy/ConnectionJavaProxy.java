@@ -19,18 +19,13 @@ import bitronix.tm.resource.common.TransactionContextHelper;
 import bitronix.tm.resource.jdbc.JdbcPooledConnection;
 import bitronix.tm.resource.jdbc.LruStatementCache.CacheKey;
 import bitronix.tm.resource.jdbc.PooledConnectionProxy;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.SystemException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
 import java.lang.reflect.Method;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Savepoint;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Map;
 
 /**
@@ -38,9 +33,9 @@ import java.util.Map;
  */
 public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements PooledConnectionProxy {
 
-    private final static Logger log = LoggerFactory.getLogger(ConnectionJavaProxy.class);
+    private static final Logger log = LoggerFactory.getLogger(ConnectionJavaProxy.class);
 
-    private final static Map<String, Method> selfMethodMap = createMethodMap(ConnectionJavaProxy.class);
+    private static final Map<String, Method> selfMethodMap = createMethodMap(ConnectionJavaProxy.class);
 
     private JdbcPooledConnection jdbcPooledConnection;
     private boolean useStatementCache;
@@ -54,7 +49,7 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
     }
 
     void initialize(JdbcPooledConnection jdbcPooledConnection, Connection connection) {
-    	this.proxy = this;
+        this.proxy = this;
         this.jdbcPooledConnection = jdbcPooledConnection;
         this.delegate = connection;
 
@@ -83,93 +78,113 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
     /* Overridden methods of java.sql.Connection */
 
     public void close() throws SQLException {
-        if (log.isDebugEnabled()) { log.debug("closing " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("closing {}", this);
+        }
 
         // in case the connection has already been closed
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             return;
+        }
 
         jdbcPooledConnection.release();
         jdbcPooledConnection = null;
     }
 
     public void commit() throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
-        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction())
+        }
+        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction()) {
             throw new SQLException("cannot commit a resource enlisted in a global transaction");
+        }
 
         delegate.commit();
     }
 
     public void rollback() throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
-        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction())
+        }
+        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction()) {
             throw new SQLException("cannot rollback a resource enlisted in a global transaction");
+        }
 
         delegate.rollback();
     }
 
     public void rollback(Savepoint savepoint) throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
-        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction())
+        }
+        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction()) {
             throw new SQLException("cannot rollback a resource enlisted in a global transaction");
+        }
 
         delegate.rollback(savepoint);
     }
 
     public Savepoint setSavepoint() throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
-        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction())
+        }
+        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction()) {
             throw new SQLException("cannot set a savepoint on a resource enlisted in a global transaction");
+        }
 
         return delegate.setSavepoint();
     }
 
     public Savepoint setSavepoint(String name) throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
-        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction())
+        }
+        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction()) {
             throw new SQLException("cannot set a savepoint on a resource enlisted in a global transaction");
+        }
 
         return delegate.setSavepoint(name);
     }
 
     public void releaseSavepoint(Savepoint savepoint) throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
-        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction())
+        }
+        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction()) {
             throw new SQLException("cannot release a savepoint on a resource enlisted in a global transaction");
+        }
 
         delegate.releaseSavepoint(savepoint);
     }
 
     public boolean getAutoCommit() throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
+        }
 
-        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction())
+        if (jdbcPooledConnection.isParticipatingInActiveGlobalTransaction()) {
             return false;
+        }
 
         return delegate.getAutoCommit();
     }
 
     public void setAutoCommit(boolean autoCommit) throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
+        }
 
-        if (!jdbcPooledConnection.isParticipatingInActiveGlobalTransaction())
+        if (!jdbcPooledConnection.isParticipatingInActiveGlobalTransaction()) {
             delegate.setAutoCommit(autoCommit);
-        else if (autoCommit)
+        } else if (autoCommit) {
             throw new SQLException("autocommit is not allowed on a resource enlisted in a global transaction");
+        }
     }
 
     public boolean isClosed() throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             return true;
+        }
         return delegate.isClosed();
     }
 
@@ -241,8 +256,7 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
             }
 
             return JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, cachedStmt, cacheKey);
-        }
-        else {
+        } else {
             PreparedStatement stmt = delegate.prepareStatement(sql);
             jdbcPooledConnection.registerUncachedStatement(stmt);
             PreparedStatement statementProxy = JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, stmt, null);
@@ -262,8 +276,7 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
             }
 
             return JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, cachedStmt, cacheKey);
-        }
-        else {
+        } else {
             PreparedStatement stmt = delegate.prepareStatement(sql, autoGeneratedKeys);
             jdbcPooledConnection.registerUncachedStatement(stmt);
             PreparedStatement statementProxy = JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, stmt, null);
@@ -283,8 +296,7 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
             }
 
             return JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, cachedStmt, cacheKey);
-        }
-        else {
+        } else {
             PreparedStatement stmt = delegate.prepareStatement(sql, resultSetType, resultSetConcurrency);
             jdbcPooledConnection.registerUncachedStatement(stmt);
             PreparedStatement statementProxy = JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, stmt, null);
@@ -304,8 +316,7 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
             }
 
             return JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, cachedStmt, cacheKey);
-        }
-        else {
+        } else {
             PreparedStatement stmt = delegate.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
             jdbcPooledConnection.registerUncachedStatement(stmt);
             PreparedStatement statementProxy = JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, stmt, null);
@@ -325,8 +336,7 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
             }
 
             return JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, cachedStmt, cacheKey);
-        }
-        else {
+        } else {
             PreparedStatement stmt = delegate.prepareStatement(sql, columnIndexes);
             jdbcPooledConnection.registerUncachedStatement(stmt);
             PreparedStatement statementProxy = JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, stmt, null);
@@ -346,8 +356,7 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
             }
 
             return JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, cachedStmt, cacheKey);
-        }
-        else {
+        } else {
             PreparedStatement stmt = delegate.prepareStatement(sql, columnNames);
             jdbcPooledConnection.registerUncachedStatement(stmt);
             PreparedStatement statementProxy = JdbcProxyFactory.INSTANCE.getProxyPreparedStatement(jdbcPooledConnection, stmt, null);
@@ -375,18 +384,18 @@ public class ConnectionJavaProxy extends JavaProxyBase<Connection> implements Po
     /**
      * Enlist this connection into the current transaction if automaticEnlistingEnabled = true for this resource.
      * If no transaction is running then this method does nothing.
+     *
      * @throws SQLException thrown when an error occurs during enlistment.
      */
     private void enlistResource() throws SQLException {
-        if (jdbcPooledConnection == null)
+        if (jdbcPooledConnection == null) {
             throw new SQLException("connection handle already closed");
+        }
 
         if (jdbcPooledConnection.getPoolingDataSource().getAutomaticEnlistingEnabled()) {
             try {
                 TransactionContextHelper.enlistInCurrentTransaction(jdbcPooledConnection);
-            } catch (SystemException ex) {
-                throw new SQLException("error enlisting " + this, ex);
-            } catch (RollbackException ex) {
+            } catch (SystemException | RollbackException ex) {
                 throw new SQLException("error enlisting " + this, ex);
             }
         } // if getAutomaticEnlistingEnabled

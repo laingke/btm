@@ -17,33 +17,27 @@ package bitronix.tm.resource.jdbc;
 
 import bitronix.tm.internal.BitronixRollbackSystemException;
 import bitronix.tm.internal.BitronixSystemException;
-import bitronix.tm.resource.common.AbstractXAResourceHolder;
-import bitronix.tm.resource.common.RecoveryXAResourceHolder;
-import bitronix.tm.resource.common.ResourceBean;
-import bitronix.tm.resource.common.StateChangeListener;
-import bitronix.tm.resource.common.TransactionContextHelper;
+import bitronix.tm.resource.common.*;
 import bitronix.tm.resource.jdbc.LruStatementCache.CacheKey;
 import bitronix.tm.resource.jdbc.lrc.LrcXADataSource;
 import bitronix.tm.resource.jdbc.proxy.JdbcProxyFactory;
 import bitronix.tm.utils.ManagementRegistrar;
 import bitronix.tm.utils.MonotonicClock;
 import bitronix.tm.utils.Scheduler;
+import jakarta.transaction.SystemException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.XAConnection;
-import javax.transaction.SystemException;
 import javax.transaction.xa.XAResource;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -54,7 +48,7 @@ import java.util.List;
  */
 public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledConnection> implements StateChangeListener<JdbcPooledConnection>, JdbcPooledConnectionMBean {
 
-    private final static Logger log = LoggerFactory.getLogger(JdbcPooledConnection.class);
+    private static final Logger log = LoggerFactory.getLogger(JdbcPooledConnection.class);
 
     private final XAConnection xaConnection;
     private final Connection connection;
@@ -66,8 +60,8 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
 
     /* management */
     private final String jmxName;
-    private volatile Date acquisitionDate;
-    private volatile Date lastReleaseDate;
+    private volatile LocalDateTime acquisitionDate;
+    private volatile LocalDateTime lastReleaseDate;
 
     private volatile int jdbcVersionDetected;
 
@@ -76,16 +70,13 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
         this.xaConnection = xaConnection;
         this.xaResource = xaConnection.getXAResource();
         this.statementsCache = new LruStatementCache(poolingDataSource.getPreparedStatementCacheSize());
-        this.uncachedStatements = Collections.synchronizedList(new ArrayList<Statement>());
-        this.lastReleaseDate = new Date(MonotonicClock.currentTimeMillis());
-        statementsCache.addEvictionListener(new LruEvictionListener<PreparedStatement>() {
-            @Override
-            public void onEviction(PreparedStatement stmt) {
-                try {
-                    stmt.close();
-                } catch (SQLException ex) {
-                    log.warn("error closing evicted statement", ex);
-                }
+        this.uncachedStatements = Collections.synchronizedList(new ArrayList<>());
+        this.lastReleaseDate = Instant.ofEpochMilli(MonotonicClock.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        statementsCache.addEvictionListener(stmt -> {
+            try {
+                stmt.close();
+            } catch (SQLException ex) {
+                log.warn("error closing evicted statement", ex);
             }
         });
 
@@ -94,11 +85,17 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
         addStateChangeEventListener(this);
 
         if (LrcXADataSource.class.getName().equals(poolingDataSource.getClassName())) {
-            if (log.isDebugEnabled()) { log.debug("emulating XA for resource " + poolingDataSource.getUniqueName() + " - changing twoPcOrderingPosition to ALWAYS_LAST_POSITION"); }
+            if (log.isDebugEnabled()) {
+                log.debug("emulating XA for resource " + poolingDataSource.getUniqueName() + " - changing twoPcOrderingPosition to ALWAYS_LAST_POSITION");
+            }
             poolingDataSource.setTwoPcOrderingPosition(Scheduler.ALWAYS_LAST_POSITION);
-            if (log.isDebugEnabled()) { log.debug("emulating XA for resource " + poolingDataSource.getUniqueName() + " - changing deferConnectionRelease to true"); }
+            if (log.isDebugEnabled()) {
+                log.debug("emulating XA for resource " + poolingDataSource.getUniqueName() + " - changing deferConnectionRelease to true");
+            }
             poolingDataSource.setDeferConnectionRelease(true);
-            if (log.isDebugEnabled()) { log.debug("emulating XA for resource " + poolingDataSource.getUniqueName() + " - changing useTmJoin to true"); }
+            if (log.isDebugEnabled()) {
+                log.debug("emulating XA for resource " + poolingDataSource.getUniqueName() + " - changing useTmJoin to true");
+            }
             poolingDataSource.setUseTmJoin(true);
         }
 
@@ -113,20 +110,29 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
         if (isolationLevel != null) {
             int level = translateIsolationLevel(isolationLevel);
             if (level < 0) {
-                log.warn("invalid transaction isolation level '" + isolationLevel + "' configured, keeping the default isolation level.");
-            }
-            else {
-                if (log.isDebugEnabled()) { log.debug("setting connection's isolation level to " + isolationLevel); }
+                log.warn("invalid transaction isolation level '{}' configured, keeping the default isolation level.", isolationLevel);
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("setting connection's isolation level to {}", isolationLevel);
+                }
                 connection.setTransactionIsolation(level);
             }
         }
     }
 
     private static int translateIsolationLevel(String isolationLevelGuarantee) {
-        if ("READ_COMMITTED".equals(isolationLevelGuarantee)) return Connection.TRANSACTION_READ_COMMITTED;
-        if ("READ_UNCOMMITTED".equals(isolationLevelGuarantee)) return Connection.TRANSACTION_READ_UNCOMMITTED;
-        if ("REPEATABLE_READ".equals(isolationLevelGuarantee)) return Connection.TRANSACTION_REPEATABLE_READ;
-        if ("SERIALIZABLE".equals(isolationLevelGuarantee)) return Connection.TRANSACTION_SERIALIZABLE;
+        if ("READ_COMMITTED".equals(isolationLevelGuarantee)) {
+            return Connection.TRANSACTION_READ_COMMITTED;
+        }
+        if ("READ_UNCOMMITTED".equals(isolationLevelGuarantee)) {
+            return Connection.TRANSACTION_READ_UNCOMMITTED;
+        }
+        if ("REPEATABLE_READ".equals(isolationLevelGuarantee)) {
+            return Connection.TRANSACTION_REPEATABLE_READ;
+        }
+        if ("SERIALIZABLE".equals(isolationLevelGuarantee)) {
+            return Connection.TRANSACTION_SERIALIZABLE;
+        }
         try {
             return Integer.parseInt(isolationLevelGuarantee);
         } catch (NumberFormatException ex) {
@@ -139,7 +145,7 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
     public void close() throws SQLException {
         // this should never happen, should we throw an exception or log at warn/error?
         if (usageCount > 0) {
-            log.warn("close connection with usage count > 0, " + this);
+            log.warn("close connection with usage count > 0, {}", this);
         }
 
         setState(State.CLOSED);
@@ -172,17 +178,21 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
         if (poolingDataSource.isEnableJdbc4ConnectionTest() && jdbcVersionDetected >= 4) {
             Boolean isValid = null;
             try {
-                if (log.isDebugEnabled()) { log.debug("testing with JDBC4 isValid() method, connection of " + this); }
+                if (log.isDebugEnabled()) {
+                    log.debug("testing with JDBC4 isValid() method, connection of {}", this);
+                }
                 Method isValidMethod = JdbcClassHelper.getIsValidMethod(connection);
-                isValid = (Boolean) isValidMethod.invoke(connection, new Object[]{ connectionTestTimeout });
+                isValid = (Boolean) isValidMethod.invoke(connection, new Object[]{connectionTestTimeout});
             } catch (Exception e) {
-                log.warn("dysfunctional JDBC4 Connection.isValid() method, or negative acquisition timeout, in call to test connection of " + this + ".  Falling back to test query.");
+                log.warn("dysfunctional JDBC4 Connection.isValid() method, or negative acquisition timeout, in call to test connection of {}.  Falling back to test query.", this);
                 jdbcVersionDetected = 3;
             }
             // if isValid is null, an exception was caught above and we fall through to the query test
             if (isValid != null) {
-                if (isValid.booleanValue()) {
-                    if (log.isDebugEnabled()) { log.debug("isValid successfully tested connection of " + this); }
+                if (Boolean.TRUE.equals(isValid)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("isValid successfully tested connection of {}", this);
+                    }
                     return;
                 }
                 throw new SQLException("connection is no longer valid");
@@ -191,38 +201,40 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
 
         String query = poolingDataSource.getTestQuery();
         if (query == null) {
-            if (log.isDebugEnabled()) { log.debug("no query to test connection of " + this + ", skipping test"); }
+            if (log.isDebugEnabled()) {
+                log.debug("no query to test connection of {}, skipping test", this);
+            }
             return;
         }
 
         // Throws a SQLException if the connection is dead
-        if (log.isDebugEnabled()) { log.debug("testing with query '" + query + "' connection of " + this); }
-        PreparedStatement stmt = connection.prepareStatement(query);
-        try {
+        if (log.isDebugEnabled()) {
+            log.debug("testing with query '{}' connection of {}", query, this);
+        }
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setQueryTimeout(connectionTestTimeout);
             ResultSet rs = stmt.executeQuery();
             rs.close();
-        } finally {
-            stmt.close();
         }
-        if (log.isDebugEnabled()) { log.debug("testQuery successfully tested connection of " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("testQuery successfully tested connection of {}", this);
+        }
     }
 
     public boolean release() throws SQLException {
-        if (log.isDebugEnabled()) { log.debug("releasing to pool " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("releasing to pool {}", this);
+        }
         --usageCount;
 
         // delisting
         try {
             TransactionContextHelper.delistFromCurrentTransaction(this);
-        }
-        catch (BitronixRollbackSystemException ex) {
+        } catch (BitronixRollbackSystemException ex) {
             throw new SQLException("unilateral rollback of " + this, ex);
-        }
-        catch (SystemException ex) {
+        } catch (SystemException ex) {
             throw new SQLException("error delisting " + this, ex);
-        }
-        finally {
+        } finally {
             // Only requeue a connection if it is no longer in use.  In the case of non-shared connections,
             // usageCount will always be 0 here, so the default behavior is unchanged.
             if (usageCount == 0) {
@@ -242,10 +254,13 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
                     throw new SQLException("error requeuing " + this, ex);
                 }
 
-                if (log.isDebugEnabled()) { log.debug("released to pool " + this); }
-            }
-            else {
-                if (log.isDebugEnabled()) { log.debug("not releasing " + this + " to pool yet, connection is still shared"); }
+                if (log.isDebugEnabled()) {
+                    log.debug("released to pool {}", this);
+                }
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("not releasing {} to pool yet, connection is still shared", this);
+                }
             }
         } // finally
 
@@ -277,7 +292,9 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
 
     @Override
     public Object getConnectionHandle() throws Exception {
-        if (log.isDebugEnabled()) { log.debug("getting connection handle from " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("getting connection handle from {}", this);
+        }
         State oldState = getState();
 
         // Increment the usage count
@@ -296,7 +313,9 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
         }
 
         if (oldState == State.IN_POOL) {
-            if (log.isDebugEnabled()) { log.debug("connection " + xaConnection + " was in state IN_POOL, testing it"); }
+            if (log.isDebugEnabled()) {
+                log.debug("connection {} was in state IN_POOL, testing it", xaConnection);
+            }
             testConnection(connection);
             applyIsolationLevel();
             applyCursorHoldabilty();
@@ -304,26 +323,27 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
                 // it is safe to set the auto-commit flag outside of a global transaction
                 applyLocalAutoCommit();
             }
-        }
-        else {
-            if (log.isDebugEnabled()) { log.debug("connection " + xaConnection + " was in state " + oldState + ", no need to test it"); }
+        } else {
+            if (log.isDebugEnabled()) {
+                log.debug("connection {} was in state {}, no need to test it", xaConnection, oldState);
+            }
         }
 
-        if (log.isDebugEnabled()) { log.debug("got connection handle from " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("got connection handle from {}", this);
+        }
         poolingDataSource.fireOnLease(connection);
-        
+
         return getConnectionHandle(connection);
     }
 
     @Override
     public void stateChanged(JdbcPooledConnection source, State oldState, State newState) {
         if (newState == State.IN_POOL) {
-            lastReleaseDate = new Date(MonotonicClock.currentTimeMillis());
-        }
-        else if (oldState == State.IN_POOL && newState == State.ACCESSIBLE) {
-            acquisitionDate = new Date(MonotonicClock.currentTimeMillis());
-        }
-        else if (oldState == State.NOT_ACCESSIBLE && newState == State.ACCESSIBLE) {
+            lastReleaseDate = Instant.ofEpochMilli(MonotonicClock.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        } else if (oldState == State.IN_POOL && newState == State.ACCESSIBLE) {
+            acquisitionDate = Instant.ofEpochMilli(MonotonicClock.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        } else if (oldState == State.NOT_ACCESSIBLE && newState == State.ACCESSIBLE) {
             TransactionContextHelper.recycle(this);
         }
     }
@@ -336,12 +356,16 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
 
         if (futureState == State.IN_POOL || futureState == State.NOT_ACCESSIBLE) {
             // close all uncached statements
-            if (log.isDebugEnabled()) { log.debug("closing " + uncachedStatements.size() + " dangling uncached statement(s)"); }
+            if (log.isDebugEnabled()) {
+                log.debug("closing " + uncachedStatements.size() + " dangling uncached statement(s)");
+            }
             for (Statement statement : uncachedStatements) {
                 try {
                     statement.close();
                 } catch (SQLException ex) {
-                    if (log.isDebugEnabled()) { log.debug("error trying to close uncached statement " + statement, ex); }
+                    if (log.isDebugEnabled()) {
+                        log.debug("error trying to close uncached statement " + statement, ex);
+                    }
                 }
             }
             uncachedStatements.clear();
@@ -350,13 +374,16 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
             try {
                 connection.clearWarnings();
             } catch (SQLException ex) {
-                if (log.isDebugEnabled()) { log.debug("error cleaning warnings of " + connection, ex); }
+                if (log.isDebugEnabled()) {
+                    log.debug("error cleaning warnings of " + connection, ex);
+                }
             }
         }
     }
 
     /**
      * Get a PreparedStatement from cache.
+     *
      * @param key the key that has been used to cache the statement.
      * @return the cached statement corresponding to the key or null if no statement is cached under that key.
      */
@@ -366,7 +393,8 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
 
     /**
      * Put a PreparedStatement in the cache.
-     * @param key the statement's cache key.
+     *
+     * @param key       the statement's cache key.
      * @param statement the statement to cache.
      * @return the cached statement.
      */
@@ -399,18 +427,23 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
         if (cursorHoldability != null) {
             int holdability = translateCursorHoldability(cursorHoldability);
             if (holdability < 0) {
-                log.warn("invalid cursor holdability '" + cursorHoldability + "' configured, keeping the default cursor holdability.");
-            }
-            else {
-                if (log.isDebugEnabled()) { log.debug("setting connection's cursor holdability to " + cursorHoldability); }
+                log.warn("invalid cursor holdability '{}' configured, keeping the default cursor holdability.", cursorHoldability);
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("setting connection's cursor holdability to {}", cursorHoldability);
+                }
                 connection.setHoldability(holdability);
             }
         }
     }
 
     private static int translateCursorHoldability(String cursorHoldability) {
-        if ("CLOSE_CURSORS_AT_COMMIT".equals(cursorHoldability)) return ResultSet.CLOSE_CURSORS_AT_COMMIT;
-        if ("HOLD_CURSORS_OVER_COMMIT".equals(cursorHoldability)) return ResultSet.HOLD_CURSORS_OVER_COMMIT;
+        if ("CLOSE_CURSORS_AT_COMMIT".equals(cursorHoldability)) {
+            return ResultSet.CLOSE_CURSORS_AT_COMMIT;
+        }
+        if ("HOLD_CURSORS_OVER_COMMIT".equals(cursorHoldability)) {
+            return ResultSet.HOLD_CURSORS_OVER_COMMIT;
+        }
         return -1;
     }
 
@@ -419,15 +452,17 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
         String localAutoCommit = getPoolingDataSource().getLocalAutoCommit();
         if (localAutoCommit != null) {
             if (localAutoCommit.equalsIgnoreCase("true")) {
-                if (log.isDebugEnabled()) { log.debug("setting connection's auto commit to true"); }
+                if (log.isDebugEnabled()) {
+                    log.debug("setting connection's auto commit to true");
+                }
                 connection.setAutoCommit(true);
-            }
-            else if (localAutoCommit.equalsIgnoreCase("false")) {
-                if (log.isDebugEnabled()) { log.debug("setting connection's auto commit to false"); }
+            } else if (localAutoCommit.equalsIgnoreCase("false")) {
+                if (log.isDebugEnabled()) {
+                    log.debug("setting connection's auto commit to false");
+                }
                 connection.setAutoCommit(false);
-            }
-            else {
-                log.warn("invalid auto commit '" + localAutoCommit + "' configured, keeping default auto commit");
+            } else {
+                log.warn("invalid auto commit '{}' configured, keeping default auto commit", localAutoCommit);
             }
         }
     }
@@ -444,12 +479,12 @@ public class JdbcPooledConnection extends AbstractXAResourceHolder<JdbcPooledCon
     }
 
     @Override
-    public Date getAcquisitionDate() {
+    public LocalDateTime getAcquisitionDate() {
         return acquisitionDate;
     }
 
     @Override
-    public Date getLastReleaseDate() {
+    public LocalDateTime getLastReleaseDate() {
         return lastReleaseDate;
     }
 

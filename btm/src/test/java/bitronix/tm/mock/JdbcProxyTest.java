@@ -17,12 +17,13 @@ package bitronix.tm.mock;
 
 import bitronix.tm.BitronixTransactionManager;
 import bitronix.tm.TransactionManagerServices;
-import junit.framework.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JdbcProxyTest extends AbstractMockJdbcTest {
 
@@ -86,12 +87,12 @@ public class JdbcProxyTest extends AbstractMockJdbcTest {
         PreparedStatement prepareStatement1 = connection.prepareStatement("SELECT 1 FROM nothing WHERE a=? AND b=? AND c=? AND d=?");
         PreparedStatement prepareStatement2 = connection.prepareStatement("SELECT 1 FROM nothing WHERE a=? AND b=? AND c=? AND d=?");
 
-        Assert.assertSame(prepareStatement1.unwrap(PreparedStatement.class), prepareStatement2.unwrap(PreparedStatement.class));
+        assertSame(prepareStatement1.unwrap(PreparedStatement.class), prepareStatement2.unwrap(PreparedStatement.class));
 
         prepareStatement2.close();
 
         prepareStatement2 = connection.prepareStatement("SELECT 1 FROM nothing WHERE a=? AND b=? AND c=? AND d=?");
-        Assert.assertSame(prepareStatement1.unwrap(PreparedStatement.class), prepareStatement2.unwrap(PreparedStatement.class));
+        assertSame(prepareStatement1.unwrap(PreparedStatement.class), prepareStatement2.unwrap(PreparedStatement.class));
 
         prepareStatement1.close();
         prepareStatement2.close();
@@ -106,8 +107,7 @@ public class JdbcProxyTest extends AbstractMockJdbcTest {
         tm.setTransactionTimeout(60);
         tm.begin();
         try {
-            Connection connection = poolingDataSource1.getConnection();
-            try {
+            try (Connection connection = poolingDataSource1.getConnection()) {
                 PreparedStatement prepareStatement1 = connection.prepareStatement("SELECT 1 FROM nothing WHERE a=? AND b=? AND c=? AND d=?");
                 assertFalse(prepareStatement1.isClosed());
 
@@ -116,8 +116,6 @@ public class JdbcProxyTest extends AbstractMockJdbcTest {
 
                 PreparedStatement prepareStatement2 = connection.prepareStatement("SELECT 1 FROM nothing WHERE a=? AND b=? AND c=? AND d=?");
                 assertFalse(prepareStatement2.isClosed());
-            } finally {
-                connection.close();
             }
         } finally {
             tm.shutdown();
@@ -135,12 +133,12 @@ public class JdbcProxyTest extends AbstractMockJdbcTest {
         PreparedStatement prepareStatement1 = connection.prepareStatement("SELECT 1 FROM nothing WHERE a=? AND b=? AND c=? AND d=?");
         PreparedStatement prepareStatement2 = connection.prepareStatement("SELECT 1 FROM nothing WHERE a=? AND b=? AND c=? AND d=?");
 
-        Assert.assertNotSame(prepareStatement1.unwrap(PreparedStatement.class), prepareStatement2.unwrap(PreparedStatement.class));
+        assertNotSame(prepareStatement1.unwrap(PreparedStatement.class), prepareStatement2.unwrap(PreparedStatement.class));
 
         prepareStatement2.close();
 
         prepareStatement2 = connection.prepareStatement("SELECT 1 FROM nothing WHERE a=? AND b=? AND c=? AND d=?");
-        Assert.assertNotSame(prepareStatement1.unwrap(PreparedStatement.class), prepareStatement2.unwrap(PreparedStatement.class));
+        assertNotSame(prepareStatement1.unwrap(PreparedStatement.class), prepareStatement2.unwrap(PreparedStatement.class));
 
         prepareStatement1.close();
         prepareStatement2.close();

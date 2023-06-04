@@ -21,23 +21,27 @@ import bitronix.tm.recovery.Recoverer;
 import bitronix.tm.recovery.RecoveryException;
 import bitronix.tm.resource.ResourceRegistrar;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class JdbcFailedPoolTest extends TestCase {
+public class JdbcFailedPoolTest {
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
         TransactionManagerServices.getJournal().open();
         TransactionManagerServices.getTaskScheduler();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         TransactionManagerServices.getJournal().close();
         TransactionManagerServices.getTaskScheduler().shutdown();
@@ -45,6 +49,7 @@ public class JdbcFailedPoolTest extends TestCase {
         MockitoXADataSource.setStaticGetXAConnectionException(null);
     }
 
+    @Test
     public void testAcquiringConnectionAfterRecoveryDoesNotMarkAsFailed() throws Exception {
         PoolingDataSource poolingDataSource = new PoolingDataSource();
         poolingDataSource.setClassName(MockitoXADataSource.class.getName());
@@ -69,6 +74,7 @@ public class JdbcFailedPoolTest extends TestCase {
         poolingDataSource.close();
     }
 
+    @Test
     public void testFailingRecoveryMarksAsFailed() throws Exception {
         MockitoXADataSource.setStaticGetXAConnectionException(new SQLException("creating a new connection does not work"));
 
@@ -94,6 +100,7 @@ public class JdbcFailedPoolTest extends TestCase {
         poolingDataSource.close();
     }
 
+    @Test
     public void testSuccessfulRecoveryMarksAsNotFailed() throws Exception {
         MockitoXADataSource.setStaticGetXAConnectionException(new SQLException("creating a new connection does not work"));
 

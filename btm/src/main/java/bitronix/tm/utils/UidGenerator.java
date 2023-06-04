@@ -32,10 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class UidGenerator {
 
-    private final static AtomicInteger sequenceGenerator = new AtomicInteger();
+    private static final AtomicInteger sequenceGenerator = new AtomicInteger();
 
     /**
      * Generate a UID, globally unique. This method relies on the configured serverId for network uniqueness.
+     *
      * @return the generated UID.
      */
     public static Uid generateUid() {
@@ -55,6 +56,7 @@ public class UidGenerator {
 
     /**
      * Generate a XID with the specified globalTransactionId.
+     *
      * @param gtrid the GTRID to use to generate the Xid.
      * @return the generated Xid.
      */

@@ -17,6 +17,7 @@ package bitronix.tm.resource.common;
 
 import java.io.Serializable;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Abstract javabean container for all common properties of a {@link bitronix.tm.resource.common.XAResourceProducer} as configured in the
@@ -47,7 +48,7 @@ public abstract class ResourceBean implements Serializable {
     private volatile boolean disabled = false;
     private volatile boolean ignoreRecoveryFailures = false;
 
-    private volatile transient int createdResourcesCounter;
+    private final transient AtomicInteger createdResourcesCounter = new AtomicInteger(0);
 
     /**
      * Initialize all properties with their default values.
@@ -64,6 +65,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Specify the underlying implementation class name of the XA resource described by this bean.
+     *
      * @param className the underlying implementation class name.
      */
     public void setClassName(String className) {
@@ -80,6 +82,7 @@ public abstract class ResourceBean implements Serializable {
     /**
      * Specify the resource unique name to be used to identify this resource during recovery. This name will be
      * registered in the transactions journal so once assigned it must never be changed.
+     *
      * @param uniqueName the resource's unique name.
      */
     public void setUniqueName(String uniqueName) {
@@ -96,10 +99,11 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Specify if the XA resource wrapper should enlist/delist this resource automatically in global transactions.
-     * When set to false, you have to enlist resources yourself with {@link javax.transaction.Transaction#enlistResource(javax.transaction.xa.XAResource)} and delist them
-     * {@link javax.transaction.Transaction#delistResource(javax.transaction.xa.XAResource, int)}.
+     * When set to false, you have to enlist resources yourself with {@link jakarta.transaction.Transaction#enlistResource(javax.transaction.xa.XAResource)} and delist them
+     * {@link jakarta.transaction.Transaction#delistResource(javax.transaction.xa.XAResource, int)}.
+     *
      * @param automaticEnlistingEnabled true if the the XA resource wrapper should enlist/delist this resource automatically in global
-     * transactions.
+     *                                  transactions.
      */
     public void setAutomaticEnlistingEnabled(boolean automaticEnlistingEnabled) {
         this.automaticEnlistingEnabled = automaticEnlistingEnabled;
@@ -118,6 +122,7 @@ public abstract class ResourceBean implements Serializable {
      * {@link javax.transaction.xa.XAResource#TMJOIN}. The transaction manager checks if two branches can be joined by
      * calling {@link javax.transaction.xa.XAResource#isSameRM(javax.transaction.xa.XAResource)}.
      * It should only be set to true if the underlying implementation supports resource joining.
+     *
      * @param useTmJoin true if transaction branches joining should be used.
      */
     public void setUseTmJoin(boolean useTmJoin) {
@@ -133,6 +138,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Set the properties that should be set on the underlying implementation.
+     *
      * @param driverProperties the properties that should be set on the underlying implementation.
      */
     public void setDriverProperties(Properties driverProperties) {
@@ -148,6 +154,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Define the maximum amount of connections that can be in the pool.
+     *
      * @param maxPoolSize the maximum amount of connections that can be in the pool.
      */
     public void setMaxPoolSize(int maxPoolSize) {
@@ -163,6 +170,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Define the minimal amount of connections that can be in the pool.
+     *
      * @param minPoolSize the maximum amount of connections that can be in the pool.
      */
     public void setMinPoolSize(int minPoolSize) {
@@ -178,6 +186,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Define the amount of seconds and idle connection can stay in the pool before getting closed.
+     *
      * @param maxIdleTime the amount of seconds and idle connection can stay in the pool before getting closed.
      */
     public void setMaxIdleTime(int maxIdleTime) {
@@ -193,6 +202,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Define the maximum lifetime (in seconds) that a connection can stay in the pool before getting closed.
+     *
      * @param maxLifeTime the maximum lifetime (in seconds) that a connection can stay in the pool before getting closed.
      */
     public void setMaxLifeTime(int maxLifeTime) {
@@ -208,6 +218,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Define the amount of connections to be created at once when the pool needs to grow.
+     *
      * @param acquireIncrement the amount of connections to be created at once when the pool needs to grow.
      */
     public void setAcquireIncrement(int acquireIncrement) {
@@ -223,6 +234,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Define the amount of time in seconds a call to get a connection from the pool will wait when the pool is empty.
+     *
      * @param acquisitionTimeout the amount of time in seconds.
      */
     public void setAcquisitionTimeout(int acquisitionTimeout) {
@@ -239,6 +251,7 @@ public abstract class ResourceBean implements Serializable {
     /**
      * Define the transaction interleaving capability of the database.
      * Should be true only if the database can run many transactions on the same connection.
+     *
      * @param deferConnectionRelease false only if the database can run many transactions on the same connection.
      */
     public void setDeferConnectionRelease(boolean deferConnectionRelease) {
@@ -255,6 +268,7 @@ public abstract class ResourceBean implements Serializable {
     /**
      * Set the amount of time in seconds the pool will wait before trying to acquire a connection again after an
      * invalid connection has been attempted to be acquired.
+     *
      * @param acquisitionInterval amount of time in seconds.
      */
     public void setAcquisitionInterval(int acquisitionInterval) {
@@ -271,6 +285,7 @@ public abstract class ResourceBean implements Serializable {
     /**
      * Set if the transaction manager should allow mixing XA and non-XA transactions. If you know all your transactions
      * should be executed within global (ie: XA) scope it is a good idea to set this property to false.
+     *
      * @param allowLocalTransactions if the transaction manager should allow mixing XA and non-XA transactions.
      */
     public void setAllowLocalTransactions(boolean allowLocalTransactions) {
@@ -286,6 +301,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Set the position at which this resource should stand during 2PC commit.
+     *
      * @param twoPcOrderingPosition the position at which this resource should stand during 2PC commit.
      */
     public void setTwoPcOrderingPosition(int twoPcOrderingPosition) {
@@ -302,6 +318,7 @@ public abstract class ResourceBean implements Serializable {
     /**
      * Set if the transaction-timeout should be set on the XAResource when the XAResource is
      * enlisted.
+     *
      * @param applyTransactionTimeout true if the transaction-timeout should be set.
      */
     public void setApplyTransactionTimeout(boolean applyTransactionTimeout) {
@@ -311,6 +328,7 @@ public abstract class ResourceBean implements Serializable {
     /**
      * Set whether connections in the ACCESSIBLE state can be shared within the context
      * of a transaction.
+     *
      * @param shareAccessibleConnections the shareAccessibleConnections to set.
      */
     public void setShareTransactionConnections(boolean shareAccessibleConnections) {
@@ -326,6 +344,7 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Set whether XA recovery errors should quarantine the resource or be ignored.
+     *
      * @param ignoreRecoveryFailures true if recovery errors should be ignored, false otherwise.
      */
     public void setIgnoreRecoveryFailures(boolean ignoreRecoveryFailures) {
@@ -342,6 +361,7 @@ public abstract class ResourceBean implements Serializable {
     /**
      * Set whether this resource is disabled, meaning it's temporarily forbidden to acquire
      * a connection from its pool.
+     *
      * @param disabled true to disable the resource, false to enable it.
      */
     public void setDisabled(boolean disabled) {
@@ -357,9 +377,10 @@ public abstract class ResourceBean implements Serializable {
 
     /**
      * Increment a transient counter. This is used for assigning per-resource numbers to connections.
+     *
      * @return the current value of the counter.
      */
     public int incCreatedResourcesCounter() {
-        return this.createdResourcesCounter++;
+        return this.createdResourcesCounter.addAndGet(1);
     }
 }

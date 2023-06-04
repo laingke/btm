@@ -27,14 +27,16 @@ public class CollectionUtils {
     /**
      * Check if a collection contains a specific object by searching for it by identity
      * instead of by using equals/hashcode.
+     *
      * @param collection the collection to search in.
-     * @param toBeFound the object to search for.
+     * @param toBeFound  the object to search for.
      * @return true if the collection contains the object, false otherwise.
      */
     public static boolean containsByIdentity(Collection<?> collection, Object toBeFound) {
         for (Object o : collection) {
-            if (o == toBeFound)
+            if (o == toBeFound) {
                 return true;
+            }
         }
         return false;
     }

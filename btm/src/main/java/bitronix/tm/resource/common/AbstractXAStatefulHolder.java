@@ -18,7 +18,7 @@ package bitronix.tm.resource.common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -29,14 +29,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public abstract class AbstractXAStatefulHolder<T extends XAStatefulHolder<T>> implements XAStatefulHolder<T> {
 
-    private final static Logger log = LoggerFactory.getLogger(AbstractXAStatefulHolder.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractXAStatefulHolder.class);
 
     private volatile State state = State.IN_POOL;
-    private final List<StateChangeListener<T>> stateChangeEventListeners = new CopyOnWriteArrayList<StateChangeListener<T>>();
-    private final Date creationDate = new Date();
+    private final List<StateChangeListener<T>> stateChangeEventListeners = new CopyOnWriteArrayList<>();
+    private final LocalDateTime creationDate = LocalDateTime.now();
 
     @Override
-    public Date getCreationDate() {
+    public LocalDateTime getCreationDate() {
         return creationDate;
     }
 
@@ -50,12 +50,15 @@ public abstract class AbstractXAStatefulHolder<T extends XAStatefulHolder<T>> im
         State oldState = this.state;
         fireStateChanging(oldState, state);
 
-        if (oldState == state)
+        if (oldState == state) {
             throw new IllegalArgumentException("cannot switch state from " + oldState +
                     " to " + state);
+        }
 
-        if (log.isDebugEnabled()) log.debug("state changing from " + oldState +
-                " to " + state + " in " + this);
+        if (log.isDebugEnabled()) {
+            log.debug("state changing from " + oldState +
+                    " to " + state + " in " + this);
+        }
 
         this.state = state;
 
@@ -74,9 +77,11 @@ public abstract class AbstractXAStatefulHolder<T extends XAStatefulHolder<T>> im
 
     @SuppressWarnings("unchecked")
     private void fireStateChanging(State currentState, State futureState) {
-        if (log.isDebugEnabled()) log.debug("notifying " + stateChangeEventListeners.size() +
-                " stateChangeEventListener(s) about state changing from " + currentState +
-                " to " + futureState + " in " + this);
+        if (log.isDebugEnabled()) {
+            log.debug("notifying " + stateChangeEventListeners.size() +
+                    " stateChangeEventListener(s) about state changing from " + currentState +
+                    " to " + futureState + " in " + this);
+        }
 
         for (StateChangeListener<T> stateChangeListener : stateChangeEventListeners) {
             stateChangeListener.stateChanging((T) this, currentState, futureState);
@@ -85,9 +90,11 @@ public abstract class AbstractXAStatefulHolder<T extends XAStatefulHolder<T>> im
 
     @SuppressWarnings("unchecked")
     private void fireStateChanged(State oldState, State newState) {
-        if (log.isDebugEnabled()) log.debug("notifying " + stateChangeEventListeners.size() +
-                " stateChangeEventListener(s) about state changed from " + oldState +
-                " to " + newState + " in " + this);
+        if (log.isDebugEnabled()) {
+            log.debug("notifying " + stateChangeEventListeners.size() +
+                    " stateChangeEventListener(s) about state changed from " + oldState +
+                    " to " + newState + " in " + this);
+        }
 
         for (StateChangeListener<T> stateChangeListener : stateChangeEventListeners) {
             stateChangeListener.stateChanged((T) this, oldState, newState);

@@ -16,10 +16,9 @@
 package bitronix.tm.resource.common;
 
 import bitronix.tm.resource.common.XAStatefulHolder.State;
+import jakarta.transaction.Synchronization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.transaction.Synchronization;
 
 /**
  * {@link Synchronization} used to release a {@link XAStatefulHolder} object after 2PC has executed.
@@ -28,7 +27,7 @@ import javax.transaction.Synchronization;
  */
 public class DeferredReleaseSynchronization implements Synchronization {
 
-    private final static Logger log = LoggerFactory.getLogger(DeferredReleaseSynchronization.class);
+    private static final Logger log = LoggerFactory.getLogger(DeferredReleaseSynchronization.class);
 
     private final XAStatefulHolder xaStatefulHolder;
 
@@ -42,12 +41,16 @@ public class DeferredReleaseSynchronization implements Synchronization {
 
     @Override
     public void afterCompletion(int status) {
-        if (log.isDebugEnabled()) { log.debug("DeferredReleaseSynchronization requeuing " + xaStatefulHolder); }
+        if (log.isDebugEnabled()) {
+            log.debug("DeferredReleaseSynchronization requeuing " + xaStatefulHolder);
+        }
 
         // set this connection's state back to IN_POOL
         xaStatefulHolder.setState(State.IN_POOL);
 
-        if (log.isDebugEnabled()) { log.debug("DeferredReleaseSynchronization requeued " + xaStatefulHolder); }
+        if (log.isDebugEnabled()) {
+            log.debug("DeferredReleaseSynchronization requeued " + xaStatefulHolder);
+        }
     }
 
     @Override

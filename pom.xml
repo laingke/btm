@@ -1,29 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <parent>
-        <groupId>org.codehaus</groupId>
-        <artifactId>codehaus-parent</artifactId>
-        <version>4</version>
-    </parent>
 
     <groupId>org.codehaus.btm</groupId>
     <artifactId>btm-parent</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <name>Bitronix Transaction Manager</name>
     <description>
-        The Bitronix Transaction Manager (BTM) is a simple but complete implementation of the JTA 1.1 API.
+        The Bitronix Transaction Manager (BTM) is a simple but complete implementation of the JTA API.
     </description>
     <inceptionYear>2006</inceptionYear>
     <url>https://github.com/bitronix/btm</url>
 
     <organization>
         <name>Bitronix Software</name>
-        <url>http://bitronix.be/</url>
+        <url>https://github.com/bitronix/btm/wiki</url>
     </organization>
 
     <issueManagement>
@@ -34,18 +29,22 @@
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
-            <url>http://apache.org/licenses/LICENSE-2.0</url>
+            <url>https://apache.org/licenses/LICENSE-2.0</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
 
     <scm>
-        <url>git@github.com:bitronix/btm.git</url>
-        <connection>scm:git:git@github.com/bitronix/btm.git</connection>
-        <developerConnection>scm:git:git@github.com:bitronix/btm.git</developerConnection>
+        <url>git@github.com:laingke/btm.git</url>
+        <connection>scm:git:git@github.com/laingke/btm.git</connection>
+        <developerConnection>scm:git:git@github.com:laingke/btm.git</developerConnection>
     </scm>
 
     <developers>
+        <developer>
+            <id>laingke</id>
+            <name>Laing Ke</name>
+        </developer>
         <developer>
             <id>lorban</id>
             <name>Ludovic Orban</name>
@@ -57,21 +56,63 @@
     </developers>
 
     <properties>
-        <java.version>1.6</java.version>
-        <spring.version>3.2.4.RELEASE</spring.version>
+        <revision>3.0.0-SNAPSHOT</revision>
+        <java.version>17</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+
+        <jakarta-cdi.version>4.0.1</jakarta-cdi.version>
+        <jakarta-ejb.version>4.0.1</jakarta-ejb.version>
+        <jakarta-inject.version>2.0.1</jakarta-inject.version>
+        <jakarta-jms.version>3.1.0</jakarta-jms.version>
+        <jakarta-servlet.version>6.0.0</jakarta-servlet.version>
+        <jakarta-transaction.version>2.0.1</jakarta-transaction.version>
+
+        <opentelemetry-bom.version>1.26.0</opentelemetry-bom.version>
+        <snakeyaml.version>2.0</snakeyaml.version>
+        <guava.version>32.0.0-jre</guava.version>
+
+        <logback.version>1.4.7</logback.version>
+        <slf4j.version>2.0.7</slf4j.version>
+
+        <cglib.version>3.3.0</cglib.version>
+        <javassist.version>3.29.2-GA</javassist.version>
+
+        <tomcat.version>10.1.8</tomcat.version>
+        <jetty.version>11.0.15</jetty.version>
+        <spring-boot.version>3.1.0</spring-boot.version>
+
+        <mockito.version>5.3.1</mockito.version>
+        <junit-jupiter.version>5.9.3</junit-jupiter.version>
+
+        <truffle-api.version>22.3.2</truffle-api.version>
+
+        <maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
+        <maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
+        <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        <maven-release-plugin.version>3.0.0</maven-release-plugin.version>
+        <asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
+        <native-maven-plugin.version>0.9.22</native-maven-plugin.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <surefire.jvm.settings>-Xmx256m</surefire.jvm.settings>
+        <surefire.jvm.settings>
+            -Xmx256m
+            --add-opens java.base/java.lang=ALL-UNNAMED
+            --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+        </surefire.jvm.settings>
     </properties>
 
     <modules>
         <module>btm</module>
-        <module>btm-jetty6-lifecycle</module>
-        <module>btm-jetty7-lifecycle</module>
-        <module>btm-jetty9-lifecycle</module>
-        <module>btm-tomcat55-lifecycle</module>
+        <module>btm-jetty-lifecycle</module>
+        <module>btm-tomcat-lifecycle</module>
         <module>btm-spring</module>
+        <module>btm-spring-boot-starter</module>
         <module>btm-docs</module>
     </modules>
 
@@ -108,93 +149,117 @@
             </dependency>
 
             <dependency>
-                <groupId>javax.transaction</groupId>
-                <artifactId>jta</artifactId>
-                <version>1.1</version>
+                <groupId>jakarta.enterprise</groupId>
+                <artifactId>jakarta.enterprise.cdi-api</artifactId>
+                <version>${jakarta-cdi.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
-                <groupId>org.apache.geronimo.specs</groupId>
-                <artifactId>geronimo-jms_1.1_spec</artifactId>
-                <version>1.1.1</version>
+                <groupId>jakarta.ejb</groupId>
+                <artifactId>jakarta.ejb-api</artifactId>
+                <version>${jakarta-ejb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.inject</groupId>
+                <artifactId>jakarta.inject-api</artifactId>
+                <version>${jakarta-inject.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.jms</groupId>
+                <artifactId>jakarta.jms-api</artifactId>
+                <version>${jakarta-jms.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${jakarta-servlet.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.transaction</groupId>
+                <artifactId>jakarta.transaction-api</artifactId>
+                <version>${jakarta-transaction.version}</version>
             </dependency>
 
             <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-bom</artifactId>
+                <version>${opentelemetry-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${snakeyaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.0.0</version>
+                <version>${logback.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>1.6.4</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>jcl-over-slf4j</artifactId>
-                <version>1.6.4</version>
+                <version>${slf4j.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>cglib</groupId>
                 <artifactId>cglib</artifactId>
-                <version>2.2.2</version>
+                <version>${cglib.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.javassist</groupId>
                 <artifactId>javassist</artifactId>
-                <version>3.18.2-GA</version>
+                <version>${javassist.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.tomcat</groupId>
-                <artifactId>catalina</artifactId>
-                <version>6.0.29</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mortbay.jetty</groupId>
-                <artifactId>jetty</artifactId>
-                <version>6.1.25</version>
+                <artifactId>tomcat-catalina</artifactId>
+                <version>${tomcat.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-plus</artifactId>
-                <version>7.3.0.v20110203</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.inject</groupId>
-                <artifactId>javax.inject</artifactId>
-                <version>1</version>
+                <artifactId>jetty-bom</artifactId>
+                <version>${jetty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-beans</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-context</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-tx</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-test</artifactId>
-                <version>${spring.version}</version>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.mockito</groupId>
-                <artifactId>mockito-all</artifactId>
-                <version>1.8.5</version>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
             </dependency>
             <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-                <version>4.8.2</version>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit-jupiter.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.graalvm.truffle</groupId>
+                <artifactId>truffle-api</artifactId>
+                <version>${truffle-api.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -204,8 +269,13 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>${maven-assembly-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
+                    <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
@@ -219,18 +289,8 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-antrun-plugin</artifactId>
-                    <version>1.7</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>1.7</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.2.1</version>
+                    <version>${maven-source-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>attach-sources</id>
@@ -243,7 +303,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.12.4</version>
+                    <version>${maven-surefire-plugin.version}</version>
                     <configuration>
                         <argLine>${surefire.jvm.settings}</argLine>
                     </configuration>
@@ -251,12 +311,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9</version>
+                    <version>${maven-javadoc-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>${maven-jar-plugin.version}</version>
                     <configuration>
                         <archive>
                             <manifest>
@@ -268,7 +328,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.2.2</version>
+                    <version>${maven-release-plugin.version}</version>
                     <configuration>
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                         <tagNameFormat>btm-@{project.version}</tagNameFormat>
@@ -278,8 +338,50 @@
                 <plugin>
                     <groupId>org.asciidoctor</groupId>
                     <artifactId>asciidoctor-maven-plugin</artifactId>
-                    <version>1.5.2.1</version> 
+                    <version>${asciidoctor-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.graalvm.buildtools</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <version>${native-maven-plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <agent>
+                            <enabled>true</enabled>
+                            <defaultMode>Direct</defaultMode>
+                            <modes>
+                                <direct>
+                                    config-output-dir=${project.basedir}/src/main/resources/META-INF/native-image/${project.groupId}/${project.artifactId}
+                                </direct>
+                            </modes>
+                            <options>
+                                <callerFilterFiles>
+                                    <filterFile>${user.dir}/caller-filter.json</filterFile>
+                                </callerFilterFiles>
+                                <accessFilterFiles>
+                                    <filterFile>${user.dir}/access-filter.json</filterFile>
+                                </accessFilterFiles>
+                            </options>
+                        </agent>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>test-native</id>
+                            <goals>
+                                <goal>test</goal>
+                            </goals>
+                            <phase>test</phase>
+                        </execution>
+                        <execution>
+                            <id>build-native</id>
+                            <goals>
+                                <goal>compile-no-fork</goal>
+                            </goals>
+                            <phase>package</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+
             </plugins>
         </pluginManagement>
     </build>
@@ -291,16 +393,18 @@
                 <module>btm-dist</module>
             </modules>
         </profile>
+        <!-- the latest LTS JDK version -->
         <profile>
-            <id>java6</id>
+            <id>java17</id>
             <properties>
-                <java.version>1.6</java.version>
+                <java.version>17</java.version>
             </properties>
         </profile>
+        <!-- the latest JDK version -->
         <profile>
-            <id>java7</id>
+            <id>java20</id>
             <properties>
-                <java.version>1.7</java.version>
+                <java.version>20</java.version>
             </properties>
         </profile>
     </profiles>

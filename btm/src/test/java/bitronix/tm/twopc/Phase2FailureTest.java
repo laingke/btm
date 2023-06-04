@@ -30,13 +30,15 @@ import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
 import bitronix.tm.resource.ResourceRegistrar;
 import bitronix.tm.resource.jdbc.PooledConnectionProxy;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.XAConnection;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.Status;
+import jakarta.transaction.HeuristicMixedException;
+import jakarta.transaction.Status;
 import javax.transaction.xa.XAException;
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -44,11 +46,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  *
  * @author Ludovic Orban
  */
-public class Phase2FailureTest extends TestCase {
+public class Phase2FailureTest {
 
     private final static Logger log = LoggerFactory.getLogger(Phase2FailureTest.class);
 
@@ -75,6 +81,7 @@ public class Phase2FailureTest extends TestCase {
      *   ACTIVE, PREPARING, PREPARED, COMMITTING, COMMITTED
      * @throws Exception if any error happens.
      */
+    @Test
     public void testExpectNoHeuristic() throws Exception {
         tm.begin();
         tm.setTransactionTimeout(10); // TX must not timeout
@@ -118,10 +125,10 @@ public class Phase2FailureTest extends TestCase {
                     journalCommittedEventCount++;
             }
         }
-        assertEquals("TM should have logged a COMMITTING status", 1, journalCommittingEventCount);
-        assertEquals("TM should have logged a COMMITTED status", 1, journalCommittedEventCount);
-        assertEquals("TM should not have logged ant UNKNOWN status", 0, journalUnknownEventCount);
-        assertEquals("TM haven't properly tried to commit", 2, commitEventCount);
+        assertEquals(1, journalCommittingEventCount, "TM should have logged a COMMITTING status");
+        assertEquals(1, journalCommittedEventCount, "TM should have logged a COMMITTED status");
+        assertEquals(0, journalUnknownEventCount, "TM should not have logged ant UNKNOWN status");
+        assertEquals(2, commitEventCount, "TM haven't properly tried to commit");
     }
 
     /**
@@ -143,6 +150,7 @@ public class Phase2FailureTest extends TestCase {
      *   ACTIVE, PREPARING, PREPARED, COMMITTING, COMMITTED
      * @throws Exception if any error happens.
      */
+    @Test
     public void testHeuristicCommit() throws Exception {
         tm.begin();
         tm.setTransactionTimeout(1); // TX timeout should have no effect here
@@ -179,9 +187,9 @@ public class Phase2FailureTest extends TestCase {
                     journalCommittedEventCount++;
             }
         }
-        assertEquals("TM should have logged a COMMITTED status", 1, journalCommittedEventCount);
-        assertEquals("TM haven't properly tried to commit", 2, commitEventCount);
-        assertEquals("TM haven't properly tried to forget", 1, forgetEventCount);
+        assertEquals(1, journalCommittedEventCount, "TM should have logged a COMMITTED status");
+        assertEquals(2, commitEventCount, "TM haven't properly tried to commit");
+        assertEquals(1, forgetEventCount, "TM haven't properly tried to forget");
     }
 
     /**
@@ -203,6 +211,7 @@ public class Phase2FailureTest extends TestCase {
      *   ACTIVE, PREPARING, PREPARED, COMMITTING, COMMITTED
      * @throws Exception if any error happens.
      */
+    @Test
     public void testHeuristicMixed() throws Exception {
         tm.begin();
         tm.setTransactionTimeout(1); // TX timeout should have no effect here
@@ -224,7 +233,7 @@ public class Phase2FailureTest extends TestCase {
             assertEquals("transaction failed during commit of a Bitronix Transaction with GTRID [", ex.getMessage().substring(0, 71));
             int idx = ex.getMessage().indexOf(']');
             assertEquals("], status=UNKNOWN, 2 resource(s) enlisted (started ", ex.getMessage().substring(idx, idx + 51));
-            assertTrue("got message <" + ex.getMessage() + ">", ex.getMessage().endsWith("resource(s) [pds2] improperly unilaterally rolled back"));
+            assertTrue(ex.getMessage().endsWith("resource(s) [pds2] improperly unilaterally rolled back"), "got message <" + ex.getMessage() + ">");
         }
 
         log.info(EventRecorder.dumpToString());
@@ -241,15 +250,13 @@ public class Phase2FailureTest extends TestCase {
                     journalUnknownEventCount++;
             }
         }
-        assertEquals("TM should have logged a UNKNOWN status", 1, journalUnknownEventCount);
-        assertEquals("TM haven't properly tried to commit", 2, commitEventCount);
+        assertEquals(1, journalUnknownEventCount, "TM should have logged a UNKNOWN status");
+        assertEquals(2, commitEventCount, "TM haven't properly tried to commit");
     }
 
-    @Override
+    @BeforeEach
     protected void setUp() throws Exception {
-        Iterator<String> it = ResourceRegistrar.getResourcesUniqueNames().iterator();
-        while (it.hasNext()) {
-            String name = it.next();
+        for (String name : ResourceRegistrar.getResourcesUniqueNames()) {
             ResourceRegistrar.unregister(ResourceRegistrar.get(name));
         }
 
@@ -282,7 +289,7 @@ public class Phase2FailureTest extends TestCase {
         tm = TransactionManagerServices.getTransactionManager();
     }
 
-    @Override
+    @AfterEach
     protected void tearDown() throws Exception {
         poolingDataSource1.close();
         poolingDataSource2.close();

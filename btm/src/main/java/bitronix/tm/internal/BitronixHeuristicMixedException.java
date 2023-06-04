@@ -15,15 +15,15 @@
  */
 package bitronix.tm.internal;
 
-import javax.transaction.HeuristicMixedException;
+import jakarta.transaction.HeuristicMixedException;
 
 /**
- * Subclass of {@link javax.transaction.HeuristicMixedException} supporting nested {@link Throwable}s.
+ * Subclass of {@link jakarta.transaction.HeuristicMixedException} supporting nested {@link Throwable}s.
  *
  * @author Ludovic Orban
  */
-public class BitronixHeuristicMixedException extends HeuristicMixedException  {
-    
+public class BitronixHeuristicMixedException extends HeuristicMixedException {
+
     public BitronixHeuristicMixedException(String string) {
         super(string);
     }

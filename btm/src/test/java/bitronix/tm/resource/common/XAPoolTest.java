@@ -20,14 +20,18 @@ import bitronix.tm.TransactionManagerServices;
 import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
 import bitronix.tm.utils.CryptoEngine;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class XAPoolTest extends TestCase {
+public class XAPoolTest {
 
+    @Test
     public void testBuildXAFactory() throws Exception {
         ResourceBean rb = new ResourceBean() {};
 
@@ -45,6 +49,7 @@ public class XAPoolTest extends TestCase {
         assertEquals("java", xads.getPassword());
     }
 
+    @Test
     public void testNoRestartOfTaskSchedulerDuringClose() throws Exception {
         PoolingDataSource pds = new PoolingDataSource();
         pds.setClassName(MockitoXADataSource.class.getName());

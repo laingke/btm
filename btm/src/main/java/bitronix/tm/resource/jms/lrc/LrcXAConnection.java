@@ -15,17 +15,7 @@
  */
 package bitronix.tm.resource.jms.lrc;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionConsumer;
-import javax.jms.ConnectionMetaData;
-import javax.jms.Destination;
-import javax.jms.ExceptionListener;
-import javax.jms.JMSException;
-import javax.jms.ServerSessionPool;
-import javax.jms.Session;
-import javax.jms.Topic;
-import javax.jms.XAConnection;
-import javax.jms.XASession;
+import jakarta.jms.*;
 
 /**
  * XAConnection implementation for a non-XA JMS resource emulating XA with Last Resource Commit.
@@ -51,13 +41,40 @@ public class LrcXAConnection implements XAConnection {
     }
 
     @Override
+    public Session createSession(int sessionMode) throws JMSException {
+        // FIXME
+        throw new JMSException(LrcXAConnection.class.getName() + " can only respond to createXASession()");
+    }
+
+    @Override
+    public Session createSession() throws JMSException {
+        // FIXME
+        throw new JMSException(LrcXAConnection.class.getName() + " can only respond to createXASession()");
+    }
+
+    @Override
     public ConnectionConsumer createConnectionConsumer(Destination destination, String messageSelector, ServerSessionPool serverSessionPool, int maxMessages) throws JMSException {
         return nonXaConnection.createConnectionConsumer(destination, messageSelector, serverSessionPool, maxMessages);
     }
 
     @Override
+    public ConnectionConsumer createSharedConnectionConsumer(Topic topic, String subscriptionName,
+                                                             String messageSelector, ServerSessionPool sessionPool,
+                                                             int maxMessages) throws JMSException {
+        return nonXaConnection.createSharedConnectionConsumer(topic, subscriptionName, messageSelector, sessionPool, maxMessages);
+    }
+
+    @Override
     public ConnectionConsumer createDurableConnectionConsumer(Topic topic, String subscriptionName, String messageSelector, ServerSessionPool serverSessionPool, int maxMessages) throws JMSException {
         return nonXaConnection.createDurableConnectionConsumer(topic, subscriptionName, messageSelector, serverSessionPool, maxMessages);
+    }
+
+    @Override
+    public ConnectionConsumer createSharedDurableConnectionConsumer(Topic topic, String subscriptionName,
+                                                                    String messageSelector,
+                                                                    ServerSessionPool sessionPool,
+                                                                    int maxMessages) throws JMSException {
+        return nonXaConnection.createSharedDurableConnectionConsumer(topic, subscriptionName, messageSelector, sessionPool, maxMessages);
     }
 
     @Override

@@ -56,8 +56,7 @@ public class PhaseException extends Exception {
                 errorMessage.append(" - ");
             }
             errorMessage.append(throwable.getClass().getName());
-            if (throwable instanceof XAException) {
-                XAException xaEx = (XAException) throwable;
+            if (throwable instanceof XAException xaEx) {
                 errorMessage.append("(");
                 errorMessage.append(Decoder.decodeXAExceptionErrorCode(xaEx));
                 String extraErrorDetails = TransactionManagerServices.getExceptionAnalyzer().extractExtraXAExceptionDetails(xaEx);
@@ -76,6 +75,7 @@ public class PhaseException extends Exception {
 
     /**
      * Get the list of exceptions that have been thrown during a phase execution.
+     *
      * @return the list of exceptions that have been thrown during a phase execution.
      */
     public List<Exception> getExceptions() {
@@ -86,6 +86,7 @@ public class PhaseException extends Exception {
      * Get the list of resource which threw an exception during a phase execution.
      * This list always contains exactly one resource per exception present in {@link #getExceptions} list.
      * Indices of both list always match a resource against the exception it threw.
+     *
      * @return the list of resource which threw an exception during a phase execution.
      */
     public List<XAResourceHolderState> getResourceStates() {

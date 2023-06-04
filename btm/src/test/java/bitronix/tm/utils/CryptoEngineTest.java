@@ -15,14 +15,17 @@
  */
 package bitronix.tm.utils;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class CryptoEngineTest extends TestCase {
+public class CryptoEngineTest {
 
+    @Test
     public void testCrypt() throws Exception {
     	String textToCrypt = "java";
 

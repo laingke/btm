@@ -17,26 +17,26 @@ package bitronix.tm.mock;
 
 import bitronix.tm.BitronixTransactionManager;
 import bitronix.tm.TransactionManagerServices;
-import bitronix.tm.mock.events.EventRecorder;
-import bitronix.tm.mock.events.JournalLogEvent;
-import bitronix.tm.mock.events.XAResourceCommitEvent;
-import bitronix.tm.mock.events.XAResourceEndEvent;
-import bitronix.tm.mock.events.XAResourceStartEvent;
+import bitronix.tm.mock.events.*;
 import bitronix.tm.resource.jms.PoolingConnectionFactory;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jms.Connection;
-import javax.jms.MessageProducer;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.transaction.Status;
+import jakarta.jms.Connection;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
+import jakarta.transaction.Status;
 import javax.transaction.xa.XAResource;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -46,6 +46,7 @@ public class JmsProperUsageMockTest extends AbstractMockJmsTest {
 
     private final static Logger log = LoggerFactory.getLogger(JmsProperUsageMockTest.class);
 
+    @Test
     public void testSimpleWorkingCase() throws Exception {
         if (log.isDebugEnabled()) { log.debug("*** getting TM"); }
         BitronixTransactionManager tm = TransactionManagerServices.getTransactionManager();
@@ -78,7 +79,7 @@ public class JmsProperUsageMockTest extends AbstractMockJmsTest {
         if (log.isDebugEnabled()) { log.debug("*** TX is done"); }
 
         // check flow
-        List orderedEvents = EventRecorder.getOrderedEvents();
+        List<? extends Event> orderedEvents = EventRecorder.getOrderedEvents();
         log.info(EventRecorder.dumpToString());
 
         assertEquals(8, orderedEvents.size());
@@ -89,10 +90,11 @@ public class JmsProperUsageMockTest extends AbstractMockJmsTest {
         assertEquals(Status.STATUS_PREPARING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_PREPARED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
         assertEquals(Status.STATUS_COMMITTING, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
-        assertEquals(true, ((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
+        assertTrue(((XAResourceCommitEvent) orderedEvents.get(i++)).isOnePhase());
         assertEquals(Status.STATUS_COMMITTED, ((JournalLogEvent) orderedEvents.get(i++)).getStatus());
     }
 
+    @Test
     public void testSerialization() throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);

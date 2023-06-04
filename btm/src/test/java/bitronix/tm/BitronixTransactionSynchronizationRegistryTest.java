@@ -15,30 +15,36 @@
  */
 package bitronix.tm;
 
-import junit.framework.TestCase;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.TransactionSynchronizationRegistry;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.TransactionSynchronizationRegistry;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class BitronixTransactionSynchronizationRegistryTest extends TestCase {
+public class BitronixTransactionSynchronizationRegistryTest {
 
     private BitronixTransactionManager btm;
 
+    @BeforeEach
     protected void setUp() throws Exception {
         btm = TransactionManagerServices.getTransactionManager();
     }
 
+    @AfterEach
     protected void tearDown() throws Exception {
         if (btm.getStatus() != Status.STATUS_NO_TRANSACTION)
             btm.rollback();
         btm.shutdown();
     }
 
+    @Test
     public void testMultiThreaded() throws Exception {
         final TransactionSynchronizationRegistry reg = TransactionManagerServices.getTransactionSynchronizationRegistry();
 
@@ -47,23 +53,22 @@ public class BitronixTransactionSynchronizationRegistryTest extends TestCase {
         assertEquals("one", reg.getResource("1"));
         btm.commit();
 
-        Thread t = new Thread() {
-            public void run() {
-                try {
-                    btm.begin();
-                    reg.putResource("1", "one");
-                    assertEquals("one", reg.getResource("1"));
-                    btm.commit();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+        Thread t = new Thread(() -> {
+            try {
+                btm.begin();
+                reg.putResource("1", "one");
+                assertEquals("one", reg.getResource("1"));
+                btm.commit();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-        };
+        });
 
         t.start();
         t.join();
     }
 
+    @Test
     public void testRegistryResources() throws Exception {
         TransactionSynchronizationRegistry reg = TransactionManagerServices.getTransactionSynchronizationRegistry();
 
@@ -91,7 +96,7 @@ public class BitronixTransactionSynchronizationRegistryTest extends TestCase {
         btm.commit();
     }
 
-
+    @Test
     public void testRegistrySynchronizations() throws Exception {
         TransactionSynchronizationRegistry reg = TransactionManagerServices.getTransactionSynchronizationRegistry();
 

@@ -15,20 +15,20 @@
  */
 package bitronix.tm.resource.jdbc.proxy;
 
+import bitronix.tm.resource.jdbc.JdbcPooledConnection;
+
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
 
-import bitronix.tm.resource.jdbc.JdbcPooledConnection;
-
 /**
  * @author Brett Wooldridge
  */
 public class StatementJavaProxy extends JavaProxyBase<Statement> {
 
-    private final static Map<String, Method> selfMethodMap = createMethodMap(StatementJavaProxy.class);
+    private static final Map<String, Method> selfMethodMap = createMethodMap(StatementJavaProxy.class);
 
     private JdbcPooledConnection jdbcPooledConnection;
 
@@ -41,7 +41,7 @@ public class StatementJavaProxy extends JavaProxyBase<Statement> {
     }
 
     void initialize(JdbcPooledConnection jdbcPooledConnection, Statement statement) {
-    	this.proxy = this;
+        this.proxy = this;
         this.jdbcPooledConnection = jdbcPooledConnection;
         this.delegate = statement;
     }
@@ -58,19 +58,19 @@ public class StatementJavaProxy extends JavaProxyBase<Statement> {
     }
 
     public ResultSet executeQuery(String sql) throws SQLException {
-    	ResultSet resultSet = delegate.executeQuery(sql);
-    	if (resultSet == null) {
-    		return null;
-    	}
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), resultSet);
+        ResultSet resultSet = delegate.executeQuery(sql);
+        if (resultSet == null) {
+            return null;
+        }
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), resultSet);
     }
 
     public ResultSet getGeneratedKeys() throws SQLException {
-    	ResultSet generatedKeys = delegate.getGeneratedKeys();
-    	if (generatedKeys == null) {
-    		return null;
-    	}
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), generatedKeys);
+        ResultSet generatedKeys = delegate.getGeneratedKeys();
+        if (generatedKeys == null) {
+            return null;
+        }
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), generatedKeys);
     }
 
     /* java.sql.Wrapper implementation */

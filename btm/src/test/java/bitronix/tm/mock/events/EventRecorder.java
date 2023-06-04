@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class EventRecorder {
 
-    private static final Map<Object, EventRecorder> eventRecorders = new HashMap<Object, EventRecorder>();
+    private static final Map<Object, EventRecorder> eventRecorders = new HashMap<>();
 
     public synchronized static EventRecorder getEventRecorder(Object key) {
         EventRecorder er = eventRecorders.get(key);
@@ -48,7 +48,7 @@ public class EventRecorder {
 
     public static List<? extends Event> getOrderedEvents() {
         Iterator<? extends Event> iterator = iterateEvents();
-        List<Event> orderedEvents = new ArrayList<Event>();
+        List<Event> orderedEvents = new ArrayList<>();
         while (iterator.hasNext()) {
             Event ev = iterator.next();
             orderedEvents.add(ev);
@@ -76,7 +76,7 @@ public class EventRecorder {
         eventRecorders.clear();
     }
 
-    private final List<Event> events = new ArrayList<Event>();
+    private final List<Event> events = new ArrayList<>();
 
     private EventRecorder() {
     }

@@ -28,10 +28,12 @@ public final class DanglingTransaction {
     private final Xid xid;
 
     public DanglingTransaction(String uniqueName, Xid xid) {
-        if (uniqueName == null)
+        if (uniqueName == null) {
             throw new NullPointerException("uniqueName cannot be null");
-        if (xid == null)
+        }
+        if (xid == null) {
             throw new NullPointerException("xid cannot be null");
+        }
         this.uniqueName = uniqueName;
         this.xid = xid;
     }
@@ -51,9 +53,7 @@ public final class DanglingTransaction {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof DanglingTransaction) {
-            DanglingTransaction otherDanglingTransaction = (DanglingTransaction) obj;
-
+        if (obj instanceof DanglingTransaction otherDanglingTransaction) {
             return uniqueName.equals(otherDanglingTransaction.uniqueName) &&
                     xid.equals(otherDanglingTransaction.xid);
         }

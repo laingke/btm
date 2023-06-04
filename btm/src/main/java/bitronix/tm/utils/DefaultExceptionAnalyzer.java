@@ -26,7 +26,7 @@ public class DefaultExceptionAnalyzer implements ExceptionAnalyzer {
 
     @Override
     public String extractExtraXAExceptionDetails(XAException ex) {
-        if (ex.getClass().getName().equals("oracle.jdbc.xa.OracleXAException")) {
+        if ("oracle.jdbc.xa.OracleXAException".equals(ex.getClass().getName())) {
             try {
                 return "ORA-" + PropertyUtils.getProperty(ex, "oracleError");
             } catch (PropertyException e) {

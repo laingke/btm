@@ -35,9 +35,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class LrcXAConnectionJavaProxy extends JavaProxyBase<Connection> {
 
-    private final static Logger log = LoggerFactory.getLogger(LrcXAConnectionJavaProxy.class);
+    private static final Logger log = LoggerFactory.getLogger(LrcXAConnectionJavaProxy.class);
 
-    private final static Map<String, Method> selfMethodMap = createMethodMap(LrcXAConnectionJavaProxy.class);
+    private static final Map<String, Method> selfMethodMap = createMethodMap(LrcXAConnectionJavaProxy.class);
 
     private final LrcXAResource xaResource;
     private final List<ConnectionEventListener> connectionEventListeners = new CopyOnWriteArrayList<ConnectionEventListener>();
@@ -74,7 +74,9 @@ public class LrcXAConnectionJavaProxy extends JavaProxyBase<Connection> {
     }
 
     private void fireCloseEvent() {
-        if (log.isDebugEnabled()) { log.debug("notifying " + connectionEventListeners.size() + " connectionEventListeners(s) about closing of " + this); }
+        if (log.isDebugEnabled()) {
+            log.debug("notifying " + connectionEventListeners.size() + " connectionEventListeners(s) about closing of " + this);
+        }
         for (ConnectionEventListener connectionEventListener : connectionEventListeners) {
             connectionEventListener.connectionClosed(new ConnectionEvent((PooledConnection) delegate));
         }
@@ -82,10 +84,10 @@ public class LrcXAConnectionJavaProxy extends JavaProxyBase<Connection> {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof LrcXAConnectionJavaProxy))
+        if (!(obj instanceof LrcXAConnectionJavaProxy other)) {
             return false;
+        }
 
-        LrcXAConnectionJavaProxy other = (LrcXAConnectionJavaProxy) obj;
         return this.delegate.equals(other.delegate);
     }
 

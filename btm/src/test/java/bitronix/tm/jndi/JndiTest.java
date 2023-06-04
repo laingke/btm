@@ -19,7 +19,9 @@ import bitronix.tm.BitronixTransactionManager;
 import bitronix.tm.TransactionManagerServices;
 import bitronix.tm.mock.resource.jdbc.MockitoXADataSource;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.naming.CompositeName;
 import javax.naming.Context;
@@ -28,23 +30,27 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import java.util.Hashtable;
 
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class JndiTest extends TestCase {
+public class JndiTest {
 
     private BitronixTransactionManager transactionManager;
 
+    @BeforeEach
     protected void setUp() throws Exception {
         transactionManager = TransactionManagerServices.getTransactionManager();
     }
 
+    @AfterEach
     protected void tearDown() throws Exception {
         transactionManager.shutdown();
     }
 
+    @Test
     public void testNameParser() throws Exception {
         BitronixContext bitronixContext = new BitronixContext();
         Name name = bitronixContext.getNameParser("").parse("java:comp/UserTransaction");
@@ -56,6 +62,7 @@ public class JndiTest extends TestCase {
         assertSame(BitronixTransactionManager.class, bitronixContext.lookup(name).getClass());
     }
 
+    @Test
     public void testDefaultUserTransactionAndResources() throws Exception {
         PoolingDataSource pds = new PoolingDataSource();
         pds.setMaxPoolSize(1);
@@ -63,11 +70,11 @@ public class JndiTest extends TestCase {
         pds.setUniqueName("jdbc/pds");
         pds.init();
 
-        Hashtable<String, String> env = new Hashtable<String, String>();
+        Hashtable<String, String> env = new Hashtable<>();
         env.put(Context.INITIAL_CONTEXT_FACTORY, BitronixInitialContextFactory.class.getName());
         Context ctx = new InitialContext(env);
 
-        assertTrue(transactionManager == ctx.lookup("java:comp/UserTransaction"));
+        assertSame(transactionManager, ctx.lookup("java:comp/UserTransaction"));
 
         try {
             ctx.lookup("aaa");
@@ -76,19 +83,20 @@ public class JndiTest extends TestCase {
             assertEquals("unable to find a bound object at name 'aaa'", ex.getMessage());
         }
 
-        assertTrue(pds == ctx.lookup("jdbc/pds"));
+        assertSame(pds, ctx.lookup("jdbc/pds"));
 
         ctx.close();
 
         pds.close();
     }
 
+    @Test
     public void testSpecialUserTransactionName() throws Exception {
         transactionManager.shutdown();
         TransactionManagerServices.getConfiguration().setJndiUserTransactionName("TM");
         transactionManager = TransactionManagerServices.getTransactionManager();
 
-        Hashtable<String, String> env = new Hashtable<String, String>();
+        Hashtable<String, String> env = new Hashtable<>();
         env.put(Context.INITIAL_CONTEXT_FACTORY, BitronixInitialContextFactory.class.getName());
         Context ctx = new InitialContext(env);
 
@@ -101,7 +109,7 @@ public class JndiTest extends TestCase {
         }
 
 
-        assertTrue(transactionManager == ctx.lookup("TM"));
+        assertSame(transactionManager, ctx.lookup("TM"));
 
         try {
             ctx.lookup("aaa");

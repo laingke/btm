@@ -16,16 +16,20 @@
 package bitronix.tm.utils;
 
 import bitronix.tm.internal.BitronixXAException;
-import junit.framework.TestCase;
 import oracle.jdbc.xa.OracleXAException;
+import org.junit.jupiter.api.Test;
 
 import javax.transaction.xa.XAException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * @author Ludovic Orban
  */
-public class DefaultExceptionAnalyzerTest extends TestCase {
+public class DefaultExceptionAnalyzerTest {
 
+    @Test
     public void testExtract() throws Exception {
         DefaultExceptionAnalyzer analyzer = new DefaultExceptionAnalyzer();
         

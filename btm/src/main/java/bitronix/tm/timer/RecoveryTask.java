@@ -20,7 +20,7 @@ import bitronix.tm.recovery.Recoverer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * This task is used to run the background recovery.
@@ -29,11 +29,11 @@ import java.util.Date;
  */
 public class RecoveryTask extends Task {
 
-    private final static Logger log = LoggerFactory.getLogger(RecoveryTask.class);
+    private static final Logger log = LoggerFactory.getLogger(RecoveryTask.class);
 
     private final Recoverer recoverer;
 
-    public RecoveryTask(Recoverer recoverer, Date executionTime, TaskScheduler scheduler) {
+    public RecoveryTask(Recoverer recoverer, LocalDateTime executionTime, TaskScheduler scheduler) {
         super(executionTime, scheduler);
         this.recoverer = recoverer;
     }
@@ -45,15 +45,20 @@ public class RecoveryTask extends Task {
 
     @Override
     public void execute() throws TaskException {
-        if (log.isDebugEnabled()) { log.debug("running recovery"); }
+        if (log.isDebugEnabled()) {
+            log.debug("running recovery");
+        }
         Thread recovery = new Thread(recoverer);
         recovery.setName("bitronix-recovery-thread");
         recovery.setDaemon(true);
-        recovery.setPriority(Thread.NORM_PRIORITY -1);
+        recovery.setPriority(Thread.NORM_PRIORITY - 1);
         recovery.start();
 
-        Date nextExecutionDate = new Date(getExecutionTime().getTime() + (TransactionManagerServices.getConfiguration().getBackgroundRecoveryIntervalSeconds() * 1000L));
-        if (log.isDebugEnabled()) { log.debug("rescheduling recovery for " + nextExecutionDate); }
+        LocalDateTime nextExecutionDate = getExecutionTime()
+                .plus(TransactionManagerServices.getConfiguration().getBackgroundRecoveryInterval());
+        if (log.isDebugEnabled()) {
+            log.debug("rescheduling recovery for {}", nextExecutionDate);
+        }
         getTaskScheduler().scheduleRecovery(recoverer, nextExecutionDate);
     }
 

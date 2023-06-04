@@ -15,16 +15,7 @@
  */
 package bitronix.tm.resource.jms;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionConsumer;
-import javax.jms.ConnectionMetaData;
-import javax.jms.Destination;
-import javax.jms.ExceptionListener;
-import javax.jms.JMSException;
-import javax.jms.ServerSessionPool;
-import javax.jms.Session;
-import javax.jms.Topic;
-import javax.jms.XAConnection;
+import jakarta.jms.*;
 
 /**
  * Disposable Connection handle.
@@ -43,8 +34,9 @@ public class JmsConnectionHandle implements Connection {
     }
 
     public XAConnection getXAConnection() throws JMSException {
-        if (xaConnection == null)
+        if (xaConnection == null) {
             throw new JMSException("XA connection handle has been closed");
+        }
         return xaConnection;
     }
 
@@ -58,9 +50,22 @@ public class JmsConnectionHandle implements Connection {
     }
 
     @Override
+    public Session createSession(int sessionMode) throws JMSException {
+        // FIXME
+        return pooledConnection.createSession(true, sessionMode);
+    }
+
+    @Override
+    public Session createSession() throws JMSException {
+        // FIXME
+        return pooledConnection.createSession(true, Session.SESSION_TRANSACTED);
+    }
+
+    @Override
     public void close() throws JMSException {
-        if (closed)
+        if (closed) {
             return;
+        }
 
         closed = true;
         pooledConnection.release();
@@ -115,8 +120,18 @@ public class JmsConnectionHandle implements Connection {
     }
 
     @Override
+    public ConnectionConsumer createSharedConnectionConsumer(Topic topic, String subscriptionName, String messageSelector, ServerSessionPool sessionPool, int maxMessages) throws JMSException {
+        return getXAConnection().createSharedConnectionConsumer(topic, subscriptionName, messageSelector, sessionPool, maxMessages);
+    }
+
+    @Override
     public ConnectionConsumer createDurableConnectionConsumer(Topic topic, String subscriptionName, String messageSelector, ServerSessionPool sessionPool, int maxMessages) throws JMSException {
         return getXAConnection().createDurableConnectionConsumer(topic, subscriptionName, messageSelector, sessionPool, maxMessages);
+    }
+
+    @Override
+    public ConnectionConsumer createSharedDurableConnectionConsumer(Topic topic, String subscriptionName, String messageSelector, ServerSessionPool sessionPool, int maxMessages) throws JMSException {
+        return getXAConnection().createSharedDurableConnectionConsumer(topic, subscriptionName, messageSelector, sessionPool, maxMessages);
     }
 
 }

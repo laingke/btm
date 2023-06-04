@@ -1,16 +1,17 @@
 package bitronix.tm.resource.jms;
 
 import bitronix.tm.mock.resource.jms.MockXAConnectionFactory;
-import junit.framework.TestCase;
 
-import javax.jms.Connection;
+import jakarta.jms.Connection;
+import org.junit.jupiter.api.Test;
 
 
 /**
  * @author Ludovic Orban
  */
-public class PoolingConnectionFactoryTest extends TestCase {
+public class PoolingConnectionFactoryTest {
 
+    @Test
     public void testInjectedXaFactory() throws Exception {
         PoolingConnectionFactory pcf = new PoolingConnectionFactory();
         try {

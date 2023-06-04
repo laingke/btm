@@ -15,20 +15,16 @@
  */
 package bitronix.tm.utils;
 
-import bitronix.tm.Version;
+import bitronix.tm.BitronixVersion;
 import bitronix.tm.internal.BitronixRuntimeException;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
+import javax.crypto.*;
 import javax.crypto.spec.DESKeySpec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -42,21 +38,22 @@ public class CryptoEngine {
 
     private static final int LONG_SIZE_IN_BYTES = 8;
     private static final String CRYPTO_PASSWORD = "B1tr0n!+";
-    private static final Charset US_ASCII = Charset.forName("US-ASCII");
+    private static final Charset US_ASCII = StandardCharsets.US_ASCII;
 
     /**
      * Crypt the given data using the given cipher.
      * The crypted result is base64-encoded before it is returned.
+     *
      * @param cipher the cypther to use.
-     * @param data the data to crypt.
+     * @param data   the data to crypt.
      * @return crypted, base64-encoded data.
-     * @throws InvalidKeyException if the given key material is shorter than 8 bytes.
+     * @throws InvalidKeyException      if the given key material is shorter than 8 bytes.
      * @throws NoSuchAlgorithmException if a secret-key factory for the specified algorithm is not available in the
-     *         default provider package or any of the other provider packages that were searched.
-     * @throws NoSuchPaddingException if transformation contains a padding scheme that is not available.
-     * @throws InvalidKeySpecException if the given key specification is inappropriate for this secret-key factory to
-     *         produce a secret key.
-     * @throws IOException if an I/O error occurs.
+     *                                  default provider package or any of the other provider packages that were searched.
+     * @throws NoSuchPaddingException   if transformation contains a padding scheme that is not available.
+     * @throws InvalidKeySpecException  if the given key specification is inappropriate for this secret-key factory to
+     *                                  produce a secret key.
+     * @throws IOException              if an I/O error occurs.
      */
     public static String crypt(String cipher, String data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeySpecException, IOException {
         byte[] prependedBytes = Encoder.longToBytes(MonotonicClock.currentTimeMillis());
@@ -86,16 +83,17 @@ public class CryptoEngine {
 
     /**
      * Decrypt using the given cipher the given base64-encoded, crypted data.
+     *
      * @param cipher the cypther to use.
-     * @param data the base64-encoded data to decrypt.
+     * @param data   the base64-encoded data to decrypt.
      * @return decrypted data.
-     * @throws InvalidKeyException if the given key material is shorter than 8 bytes.
+     * @throws InvalidKeyException      if the given key material is shorter than 8 bytes.
      * @throws NoSuchAlgorithmException if a secret-key factory for the specified algorithm is not available in the
-     *         default provider package or any of the other provider packages that were searched.
-     * @throws NoSuchPaddingException if transformation contains a padding scheme that is not available.
-     * @throws InvalidKeySpecException if the given key specification is inappropriate for this secret-key factory to
-     *         produce a secret key.
-     * @throws IOException if an I/O error occurs.
+     *                                  default provider package or any of the other provider packages that were searched.
+     * @throws NoSuchPaddingException   if transformation contains a padding scheme that is not available.
+     * @throws InvalidKeySpecException  if the given key specification is inappropriate for this secret-key factory to
+     *                                  produce a secret key.
+     * @throws IOException              if an I/O error occurs.
      */
     public static String decrypt(String cipher, String data) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeySpecException, IOException {
         DESKeySpec desKeySpec = new DESKeySpec(CRYPTO_PASSWORD.getBytes());
@@ -114,26 +112,29 @@ public class CryptoEngine {
 
         while (true) {
             int b = cis.read();
-            if (b == -1)
+            if (b == -1) {
                 break;
+            }
             sb.append((char) b);
         }
 
         cis.close();
 
-        if (sb.length() < LONG_SIZE_IN_BYTES +1)
+        if (sb.length() < LONG_SIZE_IN_BYTES + 1) {
             throw new BitronixRuntimeException("invalid crypted password '" + data + "'");
+        }
 
         return sb.substring(LONG_SIZE_IN_BYTES);
     }
 
     /**
      * Main method of this class to be used as a command-line tool to get a crypted version of a resource password.
+     *
      * @param args the command-line arguments.
      * @throws Exception when an error occurs crypting the given resource password.
      */
     public static void main(String[] args) throws Exception {
-        System.out.println("Bitronix Transaction Manager " + Version.getVersion() + " password property crypter");
+        System.out.println("Bitronix Transaction Manager " + BitronixVersion.getVersion() + " password property crypter");
         System.out.flush();
         if (args.length < 1 || args.length > 2) {
             System.err.println("Usage: CryptoEngine <password> [cipher]");
@@ -145,8 +146,9 @@ public class CryptoEngine {
 
         String data = args[0];
         String cipher = "DES";
-        if (args.length > 1)
+        if (args.length > 1) {
             cipher = args[1];
+        }
 
         String propertyValue = "{" + cipher + "}" + crypt(cipher, data);
 
@@ -157,25 +159,26 @@ public class CryptoEngine {
     /**
      * <p>Encode and decode to / from Base64 notation.</p>
      * <p>Homepage: <a href="http://iharder.net/base64">http://iharder.net/base64</a>.</p>
+     *
      * @author Robert Harder
      * @author rob@iharder.net
      */
-    private final static class Base64 {
+    private static final class Base64 {
 
-        public final static int NO_OPTIONS = 0;
-        public final static int ENCODE = 1;
-        public final static int DECODE = 0;
-        public final static int GZIP = 2;
-        public final static int DONT_BREAK_LINES = 8;
-        public final static int URL_SAFE = 16;
-        public final static int ORDERED = 32;
+        public static final int NO_OPTIONS = 0;
+        public static final int ENCODE = 1;
+        public static final int DECODE = 0;
+        public static final int GZIP = 2;
+        public static final int DONT_BREAK_LINES = 8;
+        public static final int URL_SAFE = 16;
+        public static final int ORDERED = 32;
 
-        private final static int MAX_LINE_LENGTH = 76;
-        private final static byte EQUALS_SIGN = (byte) '=';
-        private final static byte NEW_LINE = (byte) '\n';
-        private final static Charset UTF8 = Charset.forName("UTF-8"); // JDKs *must* support UTF-8
-        private final static byte WHITE_SPACE_ENC = -5; // Indicates white space in encoding
-        private final static byte EQUALS_SIGN_ENC = -1; // Indicates equals sign in encoding
+        private static final int MAX_LINE_LENGTH = 76;
+        private static final byte EQUALS_SIGN = (byte) '=';
+        private static final byte NEW_LINE = (byte) '\n';
+        private static final Charset UTF8 = StandardCharsets.UTF_8; // JDKs *must* support UTF-8
+        private static final byte WHITE_SPACE_ENC = -5; // Indicates white space in encoding
+        private static final byte EQUALS_SIGN_ENC = -1; // Indicates equals sign in encoding
 
 
         /**
@@ -183,57 +186,57 @@ public class CryptoEngine {
          */
         //private final static byte[] ALPHABET;
         /* Host platform me be something funny like EBCDIC, so we hardcode these values. */
-        private final static byte[] _STANDARD_ALPHABET = {
+        private static final byte[] _STANDARD_ALPHABET = {
                 (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F', (byte) 'G',
-                        (byte) 'H', (byte) 'I', (byte) 'J', (byte) 'K', (byte) 'L', (byte) 'M', (byte) 'N',
-                        (byte) 'O', (byte) 'P', (byte) 'Q', (byte) 'R', (byte) 'S', (byte) 'T', (byte) 'U',
-                        (byte) 'V', (byte) 'W', (byte) 'X', (byte) 'Y', (byte) 'Z',
-                        (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f', (byte) 'g',
-                        (byte) 'h', (byte) 'i', (byte) 'j', (byte) 'k', (byte) 'l', (byte) 'm', (byte) 'n',
-                        (byte) 'o', (byte) 'p', (byte) 'q', (byte) 'r', (byte) 's', (byte) 't', (byte) 'u',
-                        (byte) 'v', (byte) 'w', (byte) 'x', (byte) 'y', (byte) 'z',
-                        (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5',
-                        (byte) '6', (byte) '7', (byte) '8', (byte) '9', (byte) '+', (byte) '/'
-                };
+                (byte) 'H', (byte) 'I', (byte) 'J', (byte) 'K', (byte) 'L', (byte) 'M', (byte) 'N',
+                (byte) 'O', (byte) 'P', (byte) 'Q', (byte) 'R', (byte) 'S', (byte) 'T', (byte) 'U',
+                (byte) 'V', (byte) 'W', (byte) 'X', (byte) 'Y', (byte) 'Z',
+                (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f', (byte) 'g',
+                (byte) 'h', (byte) 'i', (byte) 'j', (byte) 'k', (byte) 'l', (byte) 'm', (byte) 'n',
+                (byte) 'o', (byte) 'p', (byte) 'q', (byte) 'r', (byte) 's', (byte) 't', (byte) 'u',
+                (byte) 'v', (byte) 'w', (byte) 'x', (byte) 'y', (byte) 'z',
+                (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5',
+                (byte) '6', (byte) '7', (byte) '8', (byte) '9', (byte) '+', (byte) '/'
+        };
 
 
         /**
          * Translates a Base64 value to either its 6-bit reconstruction value
          * or a negative number indicating some other meaning.
          */
-        private final static byte[] _STANDARD_DECODABET = {
+        private static final byte[] _STANDARD_DECODABET = {
                 -9, -9, -9, -9, -9, -9, -9, -9, -9,                 // Decimal  0 -  8
-                        -5, -5,                                      // Whitespace: Tab and Linefeed
-                        -9, -9,                                      // Decimal 11 - 12
-                        -5,                                         // Whitespace: Carriage Return
-                        -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,     // Decimal 14 - 26
-                        -9, -9, -9, -9, -9,                             // Decimal 27 - 31
-                        -5,                                         // Whitespace: Space
-                        -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,              // Decimal 33 - 42
-                        62,                                         // Plus sign at decimal 43
-                        -9, -9, -9,                                   // Decimal 44 - 46
-                        63,                                         // Slash at decimal 47
-                        52, 53, 54, 55, 56, 57, 58, 59, 60, 61,              // Numbers zero through nine
-                        -9, -9, -9,                                   // Decimal 58 - 60
-                        -1,                                         // Equals sign at decimal 61
-                        -9, -9, -9,                                      // Decimal 62 - 64
-                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,            // Letters 'A' through 'N'
-                        14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,        // Letters 'O' through 'Z'
-                        -9, -9, -9, -9, -9, -9,                          // Decimal 91 - 96
-                        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,     // Letters 'a' through 'm'
-                        39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,     // Letters 'n' through 'z'
-                        -9, -9, -9, -9                                 // Decimal 123 - 126
-                        /*,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 127 - 139
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 140 - 152
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 153 - 165
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 166 - 178
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 179 - 191
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 192 - 204
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 205 - 217
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 218 - 230
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 231 - 243
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9         // Decimal 244 - 255 */
-                };
+                -5, -5,                                      // Whitespace: Tab and Linefeed
+                -9, -9,                                      // Decimal 11 - 12
+                -5,                                         // Whitespace: Carriage Return
+                -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,     // Decimal 14 - 26
+                -9, -9, -9, -9, -9,                             // Decimal 27 - 31
+                -5,                                         // Whitespace: Space
+                -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,              // Decimal 33 - 42
+                62,                                         // Plus sign at decimal 43
+                -9, -9, -9,                                   // Decimal 44 - 46
+                63,                                         // Slash at decimal 47
+                52, 53, 54, 55, 56, 57, 58, 59, 60, 61,              // Numbers zero through nine
+                -9, -9, -9,                                   // Decimal 58 - 60
+                -1,                                         // Equals sign at decimal 61
+                -9, -9, -9,                                      // Decimal 62 - 64
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,            // Letters 'A' through 'N'
+                14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,        // Letters 'O' through 'Z'
+                -9, -9, -9, -9, -9, -9,                          // Decimal 91 - 96
+                26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,     // Letters 'a' through 'm'
+                39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,     // Letters 'n' through 'z'
+                -9, -9, -9, -9                                 // Decimal 123 - 126
+                /*,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 127 - 139
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 140 - 152
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 153 - 165
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 166 - 178
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 179 - 191
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 192 - 204
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 205 - 217
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 218 - 230
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 231 - 243
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9         // Decimal 244 - 255 */
+        };
 
 
         /**
@@ -243,57 +246,57 @@ public class CryptoEngine {
          */
         private final static byte[] _URL_SAFE_ALPHABET = {
                 (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F', (byte) 'G',
-                        (byte) 'H', (byte) 'I', (byte) 'J', (byte) 'K', (byte) 'L', (byte) 'M', (byte) 'N',
-                        (byte) 'O', (byte) 'P', (byte) 'Q', (byte) 'R', (byte) 'S', (byte) 'T', (byte) 'U',
-                        (byte) 'V', (byte) 'W', (byte) 'X', (byte) 'Y', (byte) 'Z',
-                        (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f', (byte) 'g',
-                        (byte) 'h', (byte) 'i', (byte) 'j', (byte) 'k', (byte) 'l', (byte) 'm', (byte) 'n',
-                        (byte) 'o', (byte) 'p', (byte) 'q', (byte) 'r', (byte) 's', (byte) 't', (byte) 'u',
-                        (byte) 'v', (byte) 'w', (byte) 'x', (byte) 'y', (byte) 'z',
-                        (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5',
-                        (byte) '6', (byte) '7', (byte) '8', (byte) '9', (byte) '-', (byte) '_'
-                };
+                (byte) 'H', (byte) 'I', (byte) 'J', (byte) 'K', (byte) 'L', (byte) 'M', (byte) 'N',
+                (byte) 'O', (byte) 'P', (byte) 'Q', (byte) 'R', (byte) 'S', (byte) 'T', (byte) 'U',
+                (byte) 'V', (byte) 'W', (byte) 'X', (byte) 'Y', (byte) 'Z',
+                (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f', (byte) 'g',
+                (byte) 'h', (byte) 'i', (byte) 'j', (byte) 'k', (byte) 'l', (byte) 'm', (byte) 'n',
+                (byte) 'o', (byte) 'p', (byte) 'q', (byte) 'r', (byte) 's', (byte) 't', (byte) 'u',
+                (byte) 'v', (byte) 'w', (byte) 'x', (byte) 'y', (byte) 'z',
+                (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5',
+                (byte) '6', (byte) '7', (byte) '8', (byte) '9', (byte) '-', (byte) '_'
+        };
 
         /**
          * Used in decoding URL- and Filename-safe dialects of Base64.
          */
         private final static byte[] _URL_SAFE_DECODABET = {
                 -9, -9, -9, -9, -9, -9, -9, -9, -9,                 // Decimal  0 -  8
-                        -5, -5,                                      // Whitespace: Tab and Linefeed
-                        -9, -9,                                      // Decimal 11 - 12
-                        -5,                                         // Whitespace: Carriage Return
-                        -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,     // Decimal 14 - 26
-                        -9, -9, -9, -9, -9,                             // Decimal 27 - 31
-                        -5,                                         // Whitespace: Space
-                        -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,              // Decimal 33 - 42
-                        -9,                                         // Plus sign at decimal 43
-                        -9,                                         // Decimal 44
-                        62,                                         // Minus sign at decimal 45
-                        -9,                                         // Decimal 46
-                        -9,                                         // Slash at decimal 47
-                        52, 53, 54, 55, 56, 57, 58, 59, 60, 61,              // Numbers zero through nine
-                        -9, -9, -9,                                   // Decimal 58 - 60
-                        -1,                                         // Equals sign at decimal 61
-                        -9, -9, -9,                                   // Decimal 62 - 64
-                        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,            // Letters 'A' through 'N'
-                        14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,        // Letters 'O' through 'Z'
-                        -9, -9, -9, -9,                                // Decimal 91 - 94
-                        63,                                         // Underscore at decimal 95
-                        -9,                                         // Decimal 96
-                        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,     // Letters 'a' through 'm'
-                        39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,     // Letters 'n' through 'z'
-                        -9, -9, -9, -9                                 // Decimal 123 - 126
-                        /*,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 127 - 139
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 140 - 152
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 153 - 165
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 166 - 178
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 179 - 191
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 192 - 204
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 205 - 217
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 218 - 230
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 231 - 243
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9         // Decimal 244 - 255 */
-                };
+                -5, -5,                                      // Whitespace: Tab and Linefeed
+                -9, -9,                                      // Decimal 11 - 12
+                -5,                                         // Whitespace: Carriage Return
+                -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,     // Decimal 14 - 26
+                -9, -9, -9, -9, -9,                             // Decimal 27 - 31
+                -5,                                         // Whitespace: Space
+                -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,              // Decimal 33 - 42
+                -9,                                         // Plus sign at decimal 43
+                -9,                                         // Decimal 44
+                62,                                         // Minus sign at decimal 45
+                -9,                                         // Decimal 46
+                -9,                                         // Slash at decimal 47
+                52, 53, 54, 55, 56, 57, 58, 59, 60, 61,              // Numbers zero through nine
+                -9, -9, -9,                                   // Decimal 58 - 60
+                -1,                                         // Equals sign at decimal 61
+                -9, -9, -9,                                   // Decimal 62 - 64
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,            // Letters 'A' through 'N'
+                14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,        // Letters 'O' through 'Z'
+                -9, -9, -9, -9,                                // Decimal 91 - 94
+                63,                                         // Underscore at decimal 95
+                -9,                                         // Decimal 96
+                26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,     // Letters 'a' through 'm'
+                39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,     // Letters 'n' through 'z'
+                -9, -9, -9, -9                                 // Decimal 123 - 126
+                /*,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 127 - 139
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 140 - 152
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 153 - 165
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 166 - 178
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 179 - 191
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 192 - 204
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 205 - 217
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 218 - 230
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 231 - 243
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9         // Decimal 244 - 255 */
+        };
 
         /**
          * I don't get the point of this technique, but it is described here:
@@ -301,59 +304,59 @@ public class CryptoEngine {
          */
         private final static byte[] _ORDERED_ALPHABET = {
                 (byte) '-',
-                        (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4',
-                        (byte) '5', (byte) '6', (byte) '7', (byte) '8', (byte) '9',
-                        (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F', (byte) 'G',
-                        (byte) 'H', (byte) 'I', (byte) 'J', (byte) 'K', (byte) 'L', (byte) 'M', (byte) 'N',
-                        (byte) 'O', (byte) 'P', (byte) 'Q', (byte) 'R', (byte) 'S', (byte) 'T', (byte) 'U',
-                        (byte) 'V', (byte) 'W', (byte) 'X', (byte) 'Y', (byte) 'Z',
-                        (byte) '_',
-                        (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f', (byte) 'g',
-                        (byte) 'h', (byte) 'i', (byte) 'j', (byte) 'k', (byte) 'l', (byte) 'm', (byte) 'n',
-                        (byte) 'o', (byte) 'p', (byte) 'q', (byte) 'r', (byte) 's', (byte) 't', (byte) 'u',
-                        (byte) 'v', (byte) 'w', (byte) 'x', (byte) 'y', (byte) 'z'
-                };
+                (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4',
+                (byte) '5', (byte) '6', (byte) '7', (byte) '8', (byte) '9',
+                (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F', (byte) 'G',
+                (byte) 'H', (byte) 'I', (byte) 'J', (byte) 'K', (byte) 'L', (byte) 'M', (byte) 'N',
+                (byte) 'O', (byte) 'P', (byte) 'Q', (byte) 'R', (byte) 'S', (byte) 'T', (byte) 'U',
+                (byte) 'V', (byte) 'W', (byte) 'X', (byte) 'Y', (byte) 'Z',
+                (byte) '_',
+                (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f', (byte) 'g',
+                (byte) 'h', (byte) 'i', (byte) 'j', (byte) 'k', (byte) 'l', (byte) 'm', (byte) 'n',
+                (byte) 'o', (byte) 'p', (byte) 'q', (byte) 'r', (byte) 's', (byte) 't', (byte) 'u',
+                (byte) 'v', (byte) 'w', (byte) 'x', (byte) 'y', (byte) 'z'
+        };
 
         /**
          * Used in decoding the "ordered" dialect of Base64.
          */
         private final static byte[] _ORDERED_DECODABET = {
                 -9, -9, -9, -9, -9, -9, -9, -9, -9,                 // Decimal  0 -  8
-                        -5, -5,                                      // Whitespace: Tab and Linefeed
-                        -9, -9,                                      // Decimal 11 - 12
-                        -5,                                         // Whitespace: Carriage Return
-                        -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,     // Decimal 14 - 26
-                        -9, -9, -9, -9, -9,                             // Decimal 27 - 31
-                        -5,                                         // Whitespace: Space
-                        -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,              // Decimal 33 - 42
-                        -9,                                         // Plus sign at decimal 43
-                        -9,                                         // Decimal 44
-                        0,                                          // Minus sign at decimal 45
-                        -9,                                         // Decimal 46
-                        -9,                                         // Slash at decimal 47
-                        1, 2, 3, 4, 5, 6, 7, 8, 9, 10,                       // Numbers zero through nine
-                        -9, -9, -9,                                   // Decimal 58 - 60
-                        -1,                                         // Equals sign at decimal 61
-                        -9, -9, -9,                                   // Decimal 62 - 64
-                        11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,     // Letters 'A' through 'M'
-                        24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,     // Letters 'N' through 'Z'
-                        -9, -9, -9, -9,                                // Decimal 91 - 94
-                        37,                                         // Underscore at decimal 95
-                        -9,                                         // Decimal 96
-                        38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,     // Letters 'a' through 'm'
-                        51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,     // Letters 'n' through 'z'
-                        -9, -9, -9, -9                                 // Decimal 123 - 126
-                        /*,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 127 - 139
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 140 - 152
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 153 - 165
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 166 - 178
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 179 - 191
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 192 - 204
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 205 - 217
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 218 - 230
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 231 - 243
-          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9         // Decimal 244 - 255 */
-                };
+                -5, -5,                                      // Whitespace: Tab and Linefeed
+                -9, -9,                                      // Decimal 11 - 12
+                -5,                                         // Whitespace: Carriage Return
+                -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,     // Decimal 14 - 26
+                -9, -9, -9, -9, -9,                             // Decimal 27 - 31
+                -5,                                         // Whitespace: Space
+                -9, -9, -9, -9, -9, -9, -9, -9, -9, -9,              // Decimal 33 - 42
+                -9,                                         // Plus sign at decimal 43
+                -9,                                         // Decimal 44
+                0,                                          // Minus sign at decimal 45
+                -9,                                         // Decimal 46
+                -9,                                         // Slash at decimal 47
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10,                       // Numbers zero through nine
+                -9, -9, -9,                                   // Decimal 58 - 60
+                -1,                                         // Equals sign at decimal 61
+                -9, -9, -9,                                   // Decimal 62 - 64
+                11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,     // Letters 'A' through 'M'
+                24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,     // Letters 'N' through 'Z'
+                -9, -9, -9, -9,                                // Decimal 91 - 94
+                37,                                         // Underscore at decimal 95
+                -9,                                         // Decimal 96
+                38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,     // Letters 'a' through 'm'
+                51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,     // Letters 'n' through 'z'
+                -9, -9, -9, -9                                 // Decimal 123 - 126
+                /*,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 127 - 139
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 140 - 152
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 153 - 165
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 166 - 178
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 179 - 191
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 192 - 204
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 205 - 217
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 218 - 230
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 231 - 243
+  -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9         // Decimal 244 - 255 */
+        };
 
         /**
          * Returns one of the _SOMETHING_ALPHABET byte arrays depending on
@@ -361,13 +364,18 @@ public class CryptoEngine {
          * It's possible, though silly, to specify ORDERED and URLSAFE
          * in which case one of them will be picked, though there is
          * no guarantee as to which one will be picked.
+         *
          * @param options the options
          * @return a byte array
          */
         private static byte[] getAlphabet(int options) {
-            if ((options & URL_SAFE) == URL_SAFE) return _URL_SAFE_ALPHABET;
-            else if ((options & ORDERED) == ORDERED) return _ORDERED_ALPHABET;
-            else return _STANDARD_ALPHABET;
+            if ((options & URL_SAFE) == URL_SAFE) {
+                return _URL_SAFE_ALPHABET;
+            } else if ((options & ORDERED) == ORDERED) {
+                return _ORDERED_ALPHABET;
+            } else {
+                return _STANDARD_ALPHABET;
+            }
 
         }    // end getAlphabet
 
@@ -378,13 +386,18 @@ public class CryptoEngine {
          * It's possible, though silly, to specify ORDERED and URL_SAFE
          * in which case one of them will be picked, though there is
          * no guarantee as to which one will be picked.
+         *
          * @param options the options
          * @return a byte array
          */
         private static byte[] getDecodabet(int options) {
-            if ((options & URL_SAFE) == URL_SAFE) return _URL_SAFE_DECODABET;
-            else if ((options & ORDERED) == ORDERED) return _ORDERED_DECODABET;
-            else return _STANDARD_DECODABET;
+            if ((options & URL_SAFE) == URL_SAFE) {
+                return _URL_SAFE_DECODABET;
+            } else if ((options & ORDERED) == ORDERED) {
+                return _ORDERED_DECODABET;
+            } else {
+                return _STANDARD_DECODABET;
+            }
 
         }    // end getAlphabet
 
@@ -408,7 +421,7 @@ public class CryptoEngine {
          * @param b4          A reusable byte array to reduce array instantiation
          * @param threeBytes  the array to convert
          * @param numSigBytes the number of significant bytes in your array
-         * @param options the options
+         * @param options     the options
          * @return four byte array in Base64 notation.
          * @since 1.5.1
          */
@@ -438,7 +451,7 @@ public class CryptoEngine {
          * @param numSigBytes the number of significant bytes in your array
          * @param destination the array to hold the conversion
          * @param destOffset  the index where output will be put
-         * @param options the options
+         * @param options     the options
          * @return the <var>destination</var> array
          * @since 1.3
          */
@@ -518,10 +531,10 @@ public class CryptoEngine {
          * @param off     Offset in array where conversion should begin
          * @param len     Length of data to convert
          * @param options alphabet type is pulled from this (standard, url-safe, ordered)
+         * @return a String
          * @see Base64#GZIP
          * @see Base64#DONT_BREAK_LINES
          * @since 2.0
-         * @return a String
          */
         public static String encodeBytes(byte[] source, int off, int len, int options) {
             // Isolate options
@@ -568,7 +581,7 @@ public class CryptoEngine {
 
                 // Return value according to relevant encoding.
                 return new String(baos.toByteArray(), UTF8);
-           }   // end if: compress
+            }   // end if: compress
 
             // Else, don't compress. Better not to use streams at all then.
             else {
@@ -694,9 +707,9 @@ public class CryptoEngine {
          * the form of a byte array. Does not support automatically
          * gunzipping or any other "fancy" features.
          *
-         * @param source The Base64 encoded data
-         * @param off    The offset of where to begin decoding
-         * @param len    The length of characters to decode
+         * @param source  The Base64 encoded data
+         * @param off     The offset of where to begin decoding
+         * @param len     The length of characters to decode
          * @param options the options
          * @return decoded data
          * @since 1.3
@@ -725,8 +738,9 @@ public class CryptoEngine {
                             b4Posn = 0;
 
                             // If that was the equals sign, break out of 'for' loop
-                            if (sbiCrop == EQUALS_SIGN)
+                            if (sbiCrop == EQUALS_SIGN) {
                                 break;
+                            }
                         }   // end if: quartet built
 
                     }   // end if: equals sign or better
@@ -734,7 +748,7 @@ public class CryptoEngine {
                 }   // end if: white space, equals sign or better
                 else {
                     System.err.println("Bad Base64 input character at " + i + ": " + source[i] + "(decimal)");
-                    return null;
+                    return new byte[0];
                 }   // end else:
             }   // each input character
 
@@ -858,12 +872,16 @@ public class CryptoEngine {
             }   // end catch
             finally {
                 try {
-                    if (bais != null) bais.close();
+                    if (bais != null) {
+                        bais.close();
+                    }
                 } catch (Exception e) {
                     // ignore
                 }
                 try {
-                    if (ois != null) ois.close();
+                    if (ois != null) {
+                        ois.close();
+                    }
                 } catch (Exception e) {
                     // ignore
                 }
@@ -1020,6 +1038,7 @@ public class CryptoEngine {
             /**
              * Method added by PHIL. [Thanks, PHIL. -Rob]
              * This pads the buffer without closing the stream.
+             *
              * @throws java.io.IOException when wrong padding is used
              */
             public void flushBase64() throws java.io.IOException {
@@ -1041,8 +1060,8 @@ public class CryptoEngine {
              *
              * @since 1.3
              */
-             @Override
-             public void close() throws java.io.IOException {
+            @Override
+            public void close() throws java.io.IOException {
                 // 1. Ensure that pending characters are written
                 flushBase64();
 
@@ -1060,8 +1079,8 @@ public class CryptoEngine {
              * May be helpful if you need to embed a piece of
              * base640-encoded data in a stream.
              *
-             * @since 1.5.1
              * @throws java.io.IOException never thrown
+             * @since 1.5.1
              */
             public void suspendEncoding() throws java.io.IOException {
                 flushBase64();

@@ -19,36 +19,45 @@ import bitronix.tm.mock.resource.jdbc.MockDriver;
 import bitronix.tm.resource.jdbc.PoolingDataSource;
 import bitronix.tm.resource.jdbc.lrc.LrcXADataSource;
 import bitronix.tm.utils.DefaultExceptionAnalyzer;
-import junit.framework.TestCase;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.transaction.RollbackException;
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.Transaction;
+import jakarta.transaction.RollbackException;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.Transaction;
 import java.sql.Connection;
+import java.time.Duration;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *
  * @author Ludovic Orban
  */
-public class JtaTest extends TestCase {
+public class JtaTest {
 
     private final static Logger log = LoggerFactory.getLogger(JtaTest.class);
 
     private BitronixTransactionManager btm;
 
+    @BeforeEach
     protected void setUp() throws Exception {
-        TransactionManagerServices.getConfiguration().setGracefulShutdownInterval(1);
+        TransactionManagerServices.getConfiguration().setGracefulShutdownInterval(Duration.ofSeconds(1));
         TransactionManagerServices.getConfiguration().setExceptionAnalyzer(DefaultExceptionAnalyzer.class.getName());
         btm = TransactionManagerServices.getTransactionManager();
     }
 
+    @AfterEach
     protected void tearDown() throws Exception {
         btm.shutdown();
     }
 
+    @Test
     public void testTransactionManagerGetTransaction() throws Exception {
         assertNull(btm.getTransaction());
 
@@ -64,7 +73,10 @@ public class JtaTest extends TestCase {
         btm.rollback();
     }
 
-    // this test also helps verifying MDC support but logs have to be manually checked
+    /**
+     * this test also helps to verify MDC support but logs have to be manually checked
+     */
+    @Test
     public void testSuspendResume() throws Exception {
         log.info("test starts");
         btm.begin();
@@ -77,6 +89,7 @@ public class JtaTest extends TestCase {
         log.info("test over");
     }
 
+    @Test
     public void testTimeout() throws Exception {
         btm.setTransactionTimeout(1);
         btm.begin();
@@ -96,6 +109,7 @@ public class JtaTest extends TestCase {
         assertEquals(1, sync.afterCount);
     }
 
+    @Test
     public void testMarkedRollback() throws Exception {
         btm.begin();
         CountingSynchronization sync = new CountingSynchronization();
@@ -114,6 +128,7 @@ public class JtaTest extends TestCase {
         assertEquals(1, sync.afterCount);
     }
 
+    @Test
     public void testRecycleAfterSuspend() throws Exception {
         PoolingDataSource pds = new PoolingDataSource();
         pds.setClassName(LrcXADataSource.class.getName());
@@ -150,6 +165,7 @@ public class JtaTest extends TestCase {
         pds.close();
     }
 
+    @Test
     public void testTransactionContextCleanup() throws Exception {
         assertEquals(Status.STATUS_NO_TRANSACTION, btm.getStatus());
 
@@ -159,16 +175,14 @@ public class JtaTest extends TestCase {
         final Transaction tx = btm.getTransaction();
 
         // commit on a different thread
-        Thread t = new Thread() {
-            public void run() {
-                try {
-                    tx.commit();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    fail();
-                }
+        Thread t = new Thread(() -> {
+            try {
+                tx.commit();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                fail();
             }
-        };
+        });
 
         t.start();
         t.join();
@@ -176,6 +190,7 @@ public class JtaTest extends TestCase {
         assertNull(btm.getTransaction());
     }
 
+    @Test
     public void testBeforeCompletionAddsExtraSynchronizationInDifferentPriority() throws Exception {
         btm.begin();
 
@@ -184,22 +199,25 @@ public class JtaTest extends TestCase {
         btm.commit();
     }
 
+    @Test
     public void testDebugZeroResourceTransactionDisabled() throws Exception {
         btm.begin();
-        assertNull("Activation stack trace must not be available by default.", btm.getCurrentTransaction().getActivationStackTrace());
+        assertNull(btm.getCurrentTransaction().getActivationStackTrace(), "Activation stack trace must not be available by default.");
         btm.commit();
     }
 
+    @Test
     public void testDebugZeroResourceTransaction() throws Exception {
         btm.shutdown(); // necessary to change the configuration
         TransactionManagerServices.getConfiguration().setDebugZeroResourceTransaction(true);
         btm = TransactionManagerServices.getTransactionManager();
 
         btm.begin();
-        assertNotNull("Activation stack trace must be available.", btm.getCurrentTransaction().getActivationStackTrace());
+        assertNotNull(btm.getCurrentTransaction().getActivationStackTrace(), "Activation stack trace must be available.");
         btm.commit();
     }
 
+    @Test
     public void testBeforeCompletionRuntimeExceptionRethrown() throws Exception {
         btm.begin();
 
@@ -223,9 +241,9 @@ public class JtaTest extends TestCase {
         btm.commit();
      }
 
-    private class SynchronizationRegisteringSynchronization implements Synchronization {
+    private static class SynchronizationRegisteringSynchronization implements Synchronization {
 
-        private BitronixTransaction transaction;
+        private final BitronixTransaction transaction;
 
         public SynchronizationRegisteringSynchronization(BitronixTransaction transaction) {
             this.transaction = transaction;

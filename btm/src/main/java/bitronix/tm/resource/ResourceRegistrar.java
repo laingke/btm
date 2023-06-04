@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.transaction.xa.XAResource;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,14 +44,14 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public final class ResourceRegistrar {
 
-    private final static Logger log = LoggerFactory.getLogger(ResourceRegistrar.class);
+    private static final Logger log = LoggerFactory.getLogger(ResourceRegistrar.class);
 
     /**
      * Specifies the charset that unique names of resources must be encodable with to be storeable in a TX journal.
      */
-    public final static Charset UNIQUE_NAME_CHARSET = Charset.forName("US-ASCII");
+    public static final Charset UNIQUE_NAME_CHARSET = StandardCharsets.US_ASCII;
 
-    private final static Set<ProducerHolder> resources = new CopyOnWriteArraySet<ProducerHolder>();
+    private static final Set<ProducerHolder> resources = new CopyOnWriteArraySet<>();
 
     /**
      * Get a registered {@link XAResourceProducer}.
@@ -61,10 +62,12 @@ public final class ResourceRegistrar {
     public static XAResourceProducer get(final String uniqueName) {
         if (uniqueName != null) {
             for (ProducerHolder holder : resources) {
-                if (!holder.isInitialized())
+                if (!holder.isInitialized()) {
                     continue;
-                if (uniqueName.equals(holder.getUniqueName()))
+                }
+                if (uniqueName.equals(holder.getUniqueName())) {
                     return holder.producer;
+                }
             }
         }
         return null;
@@ -72,13 +75,15 @@ public final class ResourceRegistrar {
 
     /**
      * Get all {@link XAResourceProducer}s unique names.
+     *
      * @return a Set containing all {@link bitronix.tm.resource.common.XAResourceProducer}s unique names.
      */
     public static Set<String> getResourcesUniqueNames() {
-        final Set<String> names = new HashSet<String>(resources.size());
+        final Set<String> names = new HashSet<>(resources.size());
         for (ProducerHolder holder : resources) {
-            if (!holder.isInitialized())
+            if (!holder.isInitialized()) {
                 continue;
+            }
             names.add(holder.getUniqueName());
         }
 
@@ -88,6 +93,7 @@ public final class ResourceRegistrar {
     /**
      * Register a {@link XAResourceProducer}. If registration happens after the transaction manager started, incremental
      * recovery is run on that resource.
+     *
      * @param producer the {@link XAResourceProducer}.
      * @throws RecoveryException When an error happens during recovery.
      */
@@ -100,12 +106,16 @@ public final class ResourceRegistrar {
                 if (holder instanceof InitializableProducerHolder) {
                     boolean recovered = false;
                     try {
-                        if (log.isDebugEnabled()) { log.debug("Transaction manager is running, recovering resource '" + holder.getUniqueName() + "'."); }
+                        if (log.isDebugEnabled()) {
+                            log.debug("Transaction manager is running, recovering resource '{}'.", holder.getUniqueName());
+                        }
                         IncrementalRecoverer.recover(producer);
                         ((InitializableProducerHolder) holder).initialize();
                         recovered = true;
                     } finally {
-                        if (!recovered) { resources.remove(holder); }
+                        if (!recovered) {
+                            resources.remove(holder);
+                        }
                     }
                 }
             } else {
@@ -119,13 +129,16 @@ public final class ResourceRegistrar {
 
     /**
      * Unregister a previously registered {@link XAResourceProducer}.
+     *
      * @param producer the {@link XAResourceProducer}.
      */
     public static void unregister(XAResourceProducer producer) {
         final ProducerHolder holder = new ProducerHolder(producer);
 
         if (!resources.remove(holder)) {
-            if (log.isDebugEnabled()) { log.debug("resource with uniqueName '{}' has not been registered", holder.getUniqueName()); }
+            if (log.isDebugEnabled()) {
+                log.debug("resource with uniqueName '{}' has not been registered", holder.getUniqueName());
+            }
         }
     }
 
@@ -139,16 +152,21 @@ public final class ResourceRegistrar {
         final boolean debug = log.isDebugEnabled();
 
         for (ProducerHolder holder : resources) {
-            if (!holder.isInitialized())
+            if (!holder.isInitialized()) {
                 continue;
+            }
 
             final XAResourceProducer producer = holder.producer;
             final XAResourceHolder resourceHolder = producer.findXAResourceHolder(xaResource);
             if (resourceHolder != null) {
-                if (debug) { log.debug("XAResource " + xaResource + " belongs to " + resourceHolder + " that itself belongs to " + producer); }
+                if (debug) {
+                    log.debug("XAResource " + xaResource + " belongs to " + resourceHolder + " that itself belongs to " + producer);
+                }
                 return resourceHolder;
             }
-            if (debug) { log.debug("XAResource " + xaResource + " does not belong to any resource of " + producer); }
+            if (debug) {
+                log.debug("XAResource " + xaResource + " does not belong to any resource of " + producer);
+            }
         }
 
         return null;
@@ -165,12 +183,14 @@ public final class ResourceRegistrar {
         private final XAResourceProducer producer;
 
         private ProducerHolder(XAResourceProducer producer) {
-            if (producer == null)
+            if (producer == null) {
                 throw new IllegalArgumentException("XAResourceProducer may not be 'null'. Verify your call to ResourceRegistrar.[un]register(...).");
+            }
 
             final String uniqueName = producer.getUniqueName();
-            if (uniqueName == null || uniqueName.length() == 0)
+            if (uniqueName == null || uniqueName.length() == 0) {
                 throw new IllegalArgumentException("The given XAResourceProducer '" + producer + "' does not specify a uniqueName.");
+            }
 
             final String transcodedUniqueName = new String(uniqueName.getBytes(UNIQUE_NAME_CHARSET), UNIQUE_NAME_CHARSET);
             if (!transcodedUniqueName.equals(uniqueName)) {
@@ -192,9 +212,12 @@ public final class ResourceRegistrar {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof ProducerHolder)) return false;
-            ProducerHolder that = (ProducerHolder) o;
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof ProducerHolder that)) {
+                return false;
+            }
             return getUniqueName().equals(that.getUniqueName());
         }
 

@@ -50,8 +50,9 @@ public class BitronixXid implements Xid {
 
     /**
      * Create a new XID using the specified GTRID and BQUAL.
+     *
      * @param globalTransactionId the GTRID.
-     * @param branchQualifier the BQUAL.
+     * @param branchQualifier     the BQUAL.
      */
     public BitronixXid(Uid globalTransactionId, Uid branchQualifier) {
         this.globalTransactionId = globalTransactionId;
@@ -69,6 +70,7 @@ public class BitronixXid implements Xid {
 
     /**
      * Get Bitronix XID format ID. Defined by {@link BitronixXid#FORMAT_ID}.
+     *
      * @return the Bitronix XID format ID.
      */
     @Override
@@ -78,6 +80,7 @@ public class BitronixXid implements Xid {
 
     /**
      * Get the BQUAL of the XID.
+     *
      * @return the XID branch qualifier.
      */
     @Override
@@ -91,6 +94,7 @@ public class BitronixXid implements Xid {
 
     /**
      * Get the GTRID of the XID.
+     *
      * @return the XID global transaction ID.
      */
     @Override
@@ -104,6 +108,7 @@ public class BitronixXid implements Xid {
 
     /**
      * Get a human-readable string representation of the XID.
+     *
      * @return a human-readable string representation.
      */
     @Override
@@ -112,26 +117,25 @@ public class BitronixXid implements Xid {
     }
 
     private String precalculateToString() {
-        StringBuilder sb = new StringBuilder(288);
-        sb.append("a Bitronix XID [");
-        sb.append(globalTransactionId.toString());
-        sb.append(" : ");
-        sb.append(branchQualifier.toString());
-        sb.append("]");
-        return sb.toString();
+        return "a Bitronix XID [" +
+                globalTransactionId.toString() +
+                " : " +
+                branchQualifier.toString() +
+                "]";
     }
 
     /**
      * Compare two XIDs for equality.
+     *
      * @param obj the XID to compare to.
      * @return true if both XIDs have the same format ID and contain exactly the same GTRID and BQUAL.
      */
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof BitronixXid))
+        if (!(obj instanceof BitronixXid otherXid)) {
             return false;
+        }
 
-        BitronixXid otherXid = (BitronixXid) obj;
         return FORMAT_ID == otherXid.getFormatId() &&
                 globalTransactionId.equals(otherXid.getGlobalTransactionIdUid()) &&
                 branchQualifier.equals(otherXid.getBranchQualifierUid());
@@ -139,6 +143,7 @@ public class BitronixXid implements Xid {
 
     /**
      * Get an integer hash for the XID.
+     *
      * @return a constant hash value.
      */
     @Override
@@ -148,10 +153,12 @@ public class BitronixXid implements Xid {
 
     private int precalculateHashCode() {
         int hashCode = FORMAT_ID;
-        if (globalTransactionId != null)
+        if (globalTransactionId != null) {
             hashCode += globalTransactionId.hashCode();
-        if (branchQualifier != null)
+        }
+        if (branchQualifier != null) {
             hashCode += branchQualifier.hashCode();
+        }
         return hashCode;
     }
 

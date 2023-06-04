@@ -15,6 +15,9 @@
  */
 package bitronix.tm.resource.jdbc.proxy;
 
+import bitronix.tm.resource.jdbc.JdbcPooledConnection;
+import bitronix.tm.resource.jdbc.LruStatementCache.CacheKey;
+
 import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -22,15 +25,12 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Map;
 
-import bitronix.tm.resource.jdbc.JdbcPooledConnection;
-import bitronix.tm.resource.jdbc.LruStatementCache.CacheKey;
-
 /**
  * @author Brett Wooldridge
  */
 public class PreparedStatementJavaProxy extends JavaProxyBase<PreparedStatement> {
 
-    private final static Map<String, Method> selfMethodMap = createMethodMap(PreparedStatementJavaProxy.class);
+    private static final Map<String, Method> selfMethodMap = createMethodMap(PreparedStatementJavaProxy.class);
 
     private JdbcPooledConnection jdbcPooledConnection;
     private CacheKey cacheKey;
@@ -45,7 +45,7 @@ public class PreparedStatementJavaProxy extends JavaProxyBase<PreparedStatement>
     }
 
     void initialize(JdbcPooledConnection jdbcPooledConnection, PreparedStatement statement, CacheKey cacheKey) {
-    	this.proxy = this;
+        this.proxy = this;
         this.jdbcPooledConnection = jdbcPooledConnection;
         this.delegate = statement;
         this.cacheKey = cacheKey;
@@ -69,10 +69,9 @@ public class PreparedStatementJavaProxy extends JavaProxyBase<PreparedStatement>
         if (cacheKey == null) {
             jdbcPooledConnection.unregisterUncachedStatement(delegate);
             delegate.close();
-        }
-        else {
-	        // Clear the parameters so the next use of this cached statement
-	        // doesn't pick up unexpected values.
+        } else {
+            // Clear the parameters so the next use of this cached statement
+            // doesn't pick up unexpected values.
             delegate.clearParameters();
             delegate.clearWarnings();
             try {
@@ -91,35 +90,35 @@ public class PreparedStatementJavaProxy extends JavaProxyBase<PreparedStatement>
     }
 
     public ResultSet getResultSet() throws SQLException {
-    	ResultSet resultSet = delegate.getResultSet();
-    	if (resultSet == null) {
-    		return null;
-    	}
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), resultSet);
+        ResultSet resultSet = delegate.getResultSet();
+        if (resultSet == null) {
+            return null;
+        }
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), resultSet);
     }
 
     public ResultSet executeQuery() throws SQLException {
-    	ResultSet resultSet = delegate.executeQuery();
-    	if (resultSet == null) {
-    		return null;
-    	}
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), resultSet);
+        ResultSet resultSet = delegate.executeQuery();
+        if (resultSet == null) {
+            return null;
+        }
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), resultSet);
     }
 
     public ResultSet executeQuery(String sql) throws SQLException {
-    	ResultSet resultSet = delegate.executeQuery(sql);
-    	if (resultSet == null) {
-    		return null;
-    	}
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), resultSet);
+        ResultSet resultSet = delegate.executeQuery(sql);
+        if (resultSet == null) {
+            return null;
+        }
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), resultSet);
     }
 
     public ResultSet getGeneratedKeys() throws SQLException {
-    	ResultSet generatedKeys = delegate.getGeneratedKeys();
-    	if (generatedKeys == null) {
-    		return null;
-    	}
-    	return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), generatedKeys);
+        ResultSet generatedKeys = delegate.getGeneratedKeys();
+        if (generatedKeys == null) {
+            return null;
+        }
+        return JdbcProxyFactory.INSTANCE.getProxyResultSet(this.getProxy(), generatedKeys);
     }
 
     /* java.sql.Wrapper implementation */

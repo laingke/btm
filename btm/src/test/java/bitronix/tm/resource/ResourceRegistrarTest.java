@@ -21,37 +21,25 @@ import bitronix.tm.recovery.RecoveryException;
 import bitronix.tm.resource.common.ResourceBean;
 import bitronix.tm.resource.common.XAResourceHolder;
 import bitronix.tm.resource.common.XAResourceProducer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import javax.transaction.xa.XAResource;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests the fundamental functionality of the newly implemented ResourceRegistrar.
  *
  * @author Juergen_Kellerer, 2011-08-24
  */
-@Ignore
+@Disabled
 public class ResourceRegistrarTest {
 
     ExecutorService executorService;
@@ -77,22 +65,18 @@ public class ResourceRegistrarTest {
 
     private Future registerBlockingProducer(final XAResourceProducer producer, final CountDownLatch border) throws RecoveryException {
         final XAResourceHolderState resourceHolderState = producer.startRecovery();
-        when(producer.startRecovery()).thenAnswer(new Answer<Object>() {
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                border.await();
-                return resourceHolderState;
-            }
+        when(producer.startRecovery()).thenAnswer(invocation -> {
+            border.await();
+            return resourceHolderState;
         });
 
-        return executorService.submit(new Callable<Object>() {
-            public Object call() throws Exception {
-                ResourceRegistrar.register(producer);
-                return null;
-            }
+        return executorService.submit(() -> {
+            ResourceRegistrar.register(producer);
+            return null;
         });
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         executorService = Executors.newCachedThreadPool();
         producer = createMockProducer("xa-rp");
@@ -100,7 +84,7 @@ public class ResourceRegistrarTest {
         TransactionManagerServices.getTransactionManager();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         TransactionManagerServices.getTransactionManager().shutdown();
         executorService.shutdown();
@@ -144,14 +128,14 @@ public class ResourceRegistrarTest {
         assertArrayEquals(new Object[]{"xa-rp", "uninitialized"}, ResourceRegistrar.getResourcesUniqueNames().toArray());
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testCannotRegisterSameRPTwice() throws Exception {
-        ResourceRegistrar.register(createMockProducer("xa-rp"));
+    @Test
+    public void testCannotRegisterSameRPTwice() {
+        assertThrows(IllegalArgumentException.class, () -> ResourceRegistrar.register(createMockProducer("xa-rp")));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testCannotRegisterNonASCIIUniqueName() throws Exception {
-        ResourceRegistrar.register(createMockProducer("äöü"));
+    @Test
+    public void testCannotRegisterNonASCIIUniqueName() {
+        assertThrows(IllegalArgumentException.class, () -> ResourceRegistrar.register(createMockProducer("äöü")));
     }
 
     @Test
