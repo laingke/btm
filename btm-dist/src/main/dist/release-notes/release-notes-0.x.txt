@@ -1,0 +1,56 @@
+release-notes-alpha3:
+* Fixed and tested local/global transactions incoherences.
+* Fixed JMS wrapper as it was broken in alpha 2.
+* Dropped Jakarta commons logging in favor of SLF4J (thanks to Jan Bartel).
+* Improved javadoc.
+* Many other small improvements or fixes.
+
+
+release-notes-alpha4:
+* Fixed a bug that corrupted JDBC pool when closing multiple times a pooled connection.
+* Fixed a bug that delisted a JMS resource multiple times when closing multiple times a session.
+* Fixed a bug that allowed JDBC connections to be closed when participating in a suspended transaction.
+* Refactored ThreadContext handling of BitronixTransactionManager.
+* Dropped XAConnectionFactoryException and DataSourceException.
+* Fixed bug #3: transaction interleaving is not broken anymore because of ManagedXAResource's state.
+* ResourceLoader: 'entry' renamed to 'resource'.
+* Removed obsolete bitronix.tm.recovery.csvResourcesJndiName configuration property.
+* Fixed a bug that improperly disallowed a transaction to be suspend after a connection is closed.
+* JMS pooling implementation available but not tested.
+
+
+release-notes-alpha5:
+* Fixed a bug that BitronixTransactionManager was too restrictive about when timeout can be set.
+* Fixed a bug in the JDBC pool's local/global context detection during automatic delistment.
+* Fixed duplicate name registration in the transaction log.
+* Shortened generated GTRID and BQUAL to the minimal possible size.
+* Exceptions thrown in Synchronization.beforeCompletion() now properly abort the transaction.
+* Fixed resource joining algorithm.
+* Changed default configured value for resource bean's useTmJoin property to true.
+* Dropped bitronix.tm.journal.JournalException.
+* Reinforced integrity by disallowing the TM to startup when initial recovery failed.
+
+
+release-notes-alpha6:
+* Fixed transaction joining to make it compliant with the XA spec.
+* Changed enlistment algorithm so that connections can freely be shared between transactions.
+  Fixes bug #8 (cannot enlist a connection in more than on transaction at a time).
+* Fixed transaction timeout mechanism so that timeout exceptions are now thrown at appropriate time.
+* Improved timeout detection so that processing is aborted as soon as possible when a transaction timed out.
+* Dropped avoidRecoveryLoop property of DataSourceBean, setting is now autodetected.
+* Fixed bug that made recovery fail when two or more XIDs with the same GTRID were recovered from the same resource.
+
+
+release-notes-alpha7:
+* Fixed graceful shutdown so it now properly waits until pending transactions ended.
+* Added bitronix.tm.2pc.warnAboutZeroResourceTransactions config property to control if zero-resource transactions should result in a warning or not.
+* Added support for bitronix.tm.noShutdownHook system property. When set to true, no shutdown hook is registered and you have to manually call TransactionManagerServices.shutdown() to shutdown BTM.
+* Implement TM suspend/resume without using suspend/resume on resources (http://bugs.bitronix.be/task/11)
+* Implemented proper JMS XA connections pool, synchronous inbound and outbound should be quite stable but asynchonous inbound is still experimental.
+
+
+release-notes-beta1:
+* Fixed JMS conection pool so that when a thread waits for a connection to be released to the pool when the latter is depleted it is now awoken and does not get a time out exception.
+* Introduced cacheProducersConsumers ConnectionFactoryBean property to control if producers and consumers should be cached or not by the JMS session.
+* Async inbound via ASF refactored to improve quality up to a usable level.
+* Resources created after TM startup will now cause recovery to run again.

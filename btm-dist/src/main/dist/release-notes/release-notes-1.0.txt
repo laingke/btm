@@ -10,6 +10,26 @@ version 1.0, August 4, 2007
  * Allowed restarting the TM after it has shutdown.
 
 
+release-notes-1.0-beta2:
+* Refactored enlistment algorithm so that XAResource's can now be manually enlisted.
+* Implemented Last Resource Commit to allow non-XA resources to participate in XA transactions.
+
+release-notes-1.0-beta3:
+* Refactored configuration to allow properties changes at runtime.
+* Improved TMJOIN support of Last Resource Commit wrapper.
+* Streamlined JMS and JDBC resources wrappers to share most of the infrastructure.
+* Refactored shutdown code to allow application code to call it manually.
+
+release-notes-1.0-beta4:
+* Fixed race condition in JMS resource wrapper.
+* Changed JTA and JMS 1.1 spec files from Sun for the ones coming from Apache as the license is more permissive.
+* Refactored 2PC logic to make it possible to use any kind of execution mechanism (synchronous, JDK 1.5+ concurrent package, ...).
+* Hardened transaction log files integrity checks and added bitronix.tm.journal.disk.skipCorruptedLogs configuration property to allow the recovery process to skip corrupted log entries.
+* Transaction log files are now locked to avoid unexpected collisions.
+* JndiXAConnectionFactory now allows security Principal and Credentials to be provided.
+* Added resource parameter allowLocalTransactions to disallow non-explicit mixing of xa and non-xa transactions.
+
+
 Using BTM
 ---------
 Required jars are distributed in the lib subdirectory.
