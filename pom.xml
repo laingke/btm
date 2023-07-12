@@ -65,6 +65,7 @@
         <jakarta-ejb.version>4.0.1</jakarta-ejb.version>
         <jakarta-inject.version>2.0.1</jakarta-inject.version>
         <jakarta-jms.version>3.1.0</jakarta-jms.version>
+        <jakarta-resource.version>2.1.0</jakarta-resource.version>
         <jakarta-servlet.version>6.0.0</jakarta-servlet.version>
         <jakarta-transaction.version>2.0.1</jakarta-transaction.version>
 
@@ -170,6 +171,11 @@
                 <version>${jakarta-jms.version}</version>
             </dependency>
             <dependency>
+                <groupId>jakarta.resource</groupId>
+                <artifactId>jakarta.resource-api</artifactId>
+                <version>${jakarta-resource.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>jakarta.servlet</groupId>
                 <artifactId>jakarta.servlet-api</artifactId>
                 <version>${jakarta-servlet.version}</version>
@@ -253,6 +259,11 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit-jupiter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
                 <version>${junit-jupiter.version}</version>
             </dependency>
 
