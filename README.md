@@ -1,4 +1,5 @@
-![Build Status](https://github.com/laingke/btm/actions/workflows/workflow.yml/badge.svg?event=push)
+![Build Status](https://github.com/laingke/btm/actions/workflows/maven.yml/badge.svg)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
 
 ### Home of BTM, the Bitronix JTA Transaction Manager ###
 
@@ -18,6 +19,7 @@ This Bitronix Transaction Manager (BTM) is a new refactor from [BTM 3.0](https:/
 - [ ] collect relevant monitoring data, including Metrics, Tracing and Logging.
 - [ ] Explore the integration with other projects.
 - [ ] Demos, testcases and diagrams. Performance report and comparative report on similar projects.
+- [ ] Build automation workflow.
 
 #### Original General Information ####
 * [Overview](https://github.com/bitronix/btm/wiki/Overview)
