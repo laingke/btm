@@ -79,7 +79,7 @@
         <cglib.version>3.3.0</cglib.version>
         <javassist.version>3.29.2-GA</javassist.version>
 
-        <tomcat.version>10.1.8</tomcat.version>
+        <tomcat.version>10.1.11</tomcat.version>
         <jetty.version>11.0.15</jetty.version>
         <spring-boot.version>3.1.0</spring-boot.version>
 
