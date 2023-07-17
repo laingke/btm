@@ -1,5 +1,7 @@
-![Build Status](https://github.com/laingke/btm/actions/workflows/maven.yml/badge.svg)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](code_of_conduct.md)
+[![Build Status](https://github.com/laingke/btm/actions/workflows/maven.yml/badge.svg)](https://github.com/laingke/btm/actions/workflows/maven.yml)
+[![CodeQL](https://github.com/laingke/btm/actions/workflows/codeql.yml/badge.svg)](https://github.com/laingke/btm/actions/workflows/codeql.yml)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![License](https://img.shields.io/github/license/laingke/btm)](LICENSE)
 
 ### Home of BTM, the Bitronix JTA Transaction Manager ###
 
@@ -8,18 +10,18 @@ This Bitronix Transaction Manager (BTM) is a new refactor from [BTM 3.0](https:/
 ### Next roadmap
 - [x] Support JDK17+, and transition from Java EE to Jakarta EE, support Jakarta EE 10.
 - [ ] Support the least web containers, and other containers such as Undertow/Quarkus etc.
-- [x] Bump dependencies version.
+- [x] Bump dependencies version with Dependabot.
 - [x] Implement module with Jigsaw but not OSGi.
-- [ ] Continuous security enhancement. Stateless enhancement.
+- [x] Continuous security enhancement. Stateless enhancement.
 - [ ] Support YAML configuration.
 - [ ] Support GraalVM build. (CGLIB will be disabled.)
 - [ ] Store runtime data to a distributed storage system or TSDB.
-- [ ] Refactor GUI module(which is removed now) with JavaFX or WebApp, and support other friendly API to access BTM runtime data.
+- [ ] Refactor GUI module(which is removed now) with JavaFX or WebApp, and support other friendly API to access BTM runtime data. 
 - [ ] Refactor Document, and display in GitHub Pages, and i18n support(optional).
 - [ ] collect relevant monitoring data, including Metrics, Tracing and Logging.
 - [ ] Explore the integration with other projects.
 - [ ] Demos, testcases and diagrams. Performance report and comparative report on similar projects.
-- [ ] Build automation workflow.
+- [x] Build automation workflow.
 
 #### Original General Information ####
 * [Overview](https://github.com/bitronix/btm/wiki/Overview)
