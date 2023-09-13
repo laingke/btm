@@ -69,7 +69,7 @@
         <jakarta-servlet.version>6.0.0</jakarta-servlet.version>
         <jakarta-transaction.version>2.0.1</jakarta-transaction.version>
 
-        <opentelemetry-bom.version>1.29.0</opentelemetry-bom.version>
+        <opentelemetry-bom.version>1.30.1</opentelemetry-bom.version>
         <snakeyaml.version>2.1</snakeyaml.version>
         <guava.version>32.1.2-jre</guava.version>
 
