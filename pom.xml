@@ -71,7 +71,7 @@
 
         <opentelemetry-bom.version>1.32.0</opentelemetry-bom.version>
         <snakeyaml.version>2.2</snakeyaml.version>
-        <guava.version>32.1.2-jre</guava.version>
+        <guava.version>33.0.0-jre</guava.version>
 
         <logback.version>1.4.8</logback.version>
         <slf4j.version>2.0.9</slf4j.version>
