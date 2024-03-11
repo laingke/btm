@@ -80,7 +80,7 @@
         <javassist.version>3.30.2-GA</javassist.version>
 
         <tomcat.version>10.1.19</tomcat.version>
-        <jetty.version>12.0.6</jetty.version>
+        <jetty.version>12.0.7</jetty.version>
         <spring-boot.version>3.2.3</spring-boot.version>
 
         <mockito.version>5.11.0</mockito.version>
