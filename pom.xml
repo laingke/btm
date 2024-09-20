@@ -81,7 +81,7 @@
 
         <tomcat.version>10.1.29</tomcat.version>
         <jetty.version>12.0.13</jetty.version>
-        <spring-boot.version>3.3.3</spring-boot.version>
+        <spring-boot.version>3.3.4</spring-boot.version>
 
         <mockito.version>5.13.0</mockito.version>
         <junit-jupiter.version>5.10.3</junit-jupiter.version>
