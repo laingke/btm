@@ -70,7 +70,7 @@
         <jakarta-transaction.version>2.0.1</jakarta-transaction.version>
 
         <opentelemetry-bom.version>1.47.0</opentelemetry-bom.version>
-        <snakeyaml.version>2.3</snakeyaml.version>
+        <snakeyaml.version>2.4</snakeyaml.version>
         <guava.version>33.4.0-jre</guava.version>
 
         <logback.version>1.5.16</logback.version>
