@@ -92,7 +92,7 @@ public final class Committer extends AbstractPhaseEngine {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("phase 2 commit executed on resources " + Decoder.collectResourcesNames(committedResources));
+            log.debug("phase 2 commit executed on resources {}", Decoder.collectResourcesNames(committedResources));
         }
 
         // Some resources might have failed the 2nd phase of 2PC.
@@ -109,7 +109,7 @@ public final class Committer extends AbstractPhaseEngine {
             committedAndNotInterestedResources.addAll(committedResources);
             committedAndNotInterestedResources.addAll(notInterestedResources);
 
-            log.debug("phase 2 commit succeeded on resources " + Decoder.collectResourcesNames(committedAndNotInterestedResources));
+            log.debug("phase 2 commit succeeded on resources {}", Decoder.collectResourcesNames(committedAndNotInterestedResources));
         }
 
         transaction.setStatus(Status.STATUS_COMMITTED, committedAndNotInterestedUniqueNames);
@@ -202,12 +202,12 @@ public final class Committer extends AbstractPhaseEngine {
         private void commitResource(XAResourceHolderState resourceHolder, boolean onePhase) throws XAException {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("committing resource " + resourceHolder + (onePhase ? " (with one-phase optimization)" : ""));
+                    log.debug("committing resource {}", resourceHolder + (onePhase ? " (with one-phase optimization)" : ""));
                 }
                 resourceHolder.getXAResource().commit(resourceHolder.getXid(), onePhase);
                 committedResources.add(resourceHolder);
                 if (log.isDebugEnabled()) {
-                    log.debug("committed resource " + resourceHolder);
+                    log.debug("committed resource {}", resourceHolder);
                 }
             } catch (XAException ex) {
                 handleXAException(resourceHolder, ex, onePhase);
@@ -216,28 +216,19 @@ public final class Committer extends AbstractPhaseEngine {
 
         private void handleXAException(XAResourceHolderState failedResourceHolder, XAException xaException, boolean onePhase) throws XAException {
             switch (xaException.errorCode) {
-                case XAException.XA_HEURCOM:
+                case XAException.XA_HEURCOM -> {
                     forgetHeuristicCommit(failedResourceHolder);
                     return;
-
-                case XAException.XAER_NOTA:
-                    throw new BitronixXAException("unknown heuristic termination, global state of this transaction is unknown - guilty: " + failedResourceHolder, XAException.XA_HEURHAZ, xaException);
-
-                case XAException.XA_HEURHAZ:
-                case XAException.XA_HEURMIX:
-                case XAException.XA_HEURRB:
-                case XAException.XA_RBCOMMFAIL:
-                case XAException.XA_RBDEADLOCK:
-                case XAException.XA_RBINTEGRITY:
-                case XAException.XA_RBOTHER:
-                case XAException.XA_RBPROTO:
-                case XAException.XA_RBROLLBACK:
-                case XAException.XA_RBTIMEOUT:
-                case XAException.XA_RBTRANSIENT:
-                    log.error("heuristic rollback is incompatible with the global state of this transaction - guilty: " + failedResourceHolder);
+                }
+                case XAException.XAER_NOTA -> throw new BitronixXAException("unknown heuristic termination, global state of this transaction is unknown - guilty: " + failedResourceHolder, XAException.XA_HEURHAZ, xaException);
+                case XAException.XA_HEURHAZ, XAException.XA_HEURMIX, XAException.XA_HEURRB,
+                        XAException.XA_RBCOMMFAIL, XAException.XA_RBDEADLOCK, XAException.XA_RBINTEGRITY,
+                        XAException.XA_RBOTHER, XAException.XA_RBPROTO, XAException.XA_RBROLLBACK,
+                        XAException.XA_RBTIMEOUT, XAException.XA_RBTRANSIENT -> {
+                    log.error("heuristic rollback is incompatible with the global state of this transaction - guilty: {}", failedResourceHolder);
                     throw xaException;
-
-                default:
+                }
+                default -> {
                     if (onePhase) {
                         if (log.isDebugEnabled()) {
                             log.debug("XAException thrown in commit phase of 1PC optimization, rethrowing it");
@@ -248,17 +239,18 @@ public final class Committer extends AbstractPhaseEngine {
                     log.warn("resource '" + failedResourceHolder.getUniqueName() + "' reported " + Decoder.decodeXAExceptionErrorCode(xaException) +
                             (extraErrorDetails == null ? "" : ", extra error=" + extraErrorDetails) + " when asked to commit transaction branch." +
                             " Transaction is prepared and will commit via recovery service when resource availability allows.", xaException);
+                }
             }
         }
 
         private void forgetHeuristicCommit(XAResourceHolderState resourceHolder) {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("handling heuristic commit on resource " + resourceHolder.getXAResource());
+                    log.debug("handling heuristic commit on resource {}", resourceHolder.getXAResource());
                 }
                 resourceHolder.getXAResource().forget(resourceHolder.getXid());
                 if (log.isDebugEnabled()) {
-                    log.debug("forgotten heuristically committed resource " + resourceHolder.getXAResource());
+                    log.debug("forgotten heuristically committed resource {}", resourceHolder.getXAResource());
                 }
             } catch (XAException ex) {
                 String extraErrorDetails = TransactionManagerServices.getExceptionAnalyzer().extractExtraXAExceptionDetails(ex);

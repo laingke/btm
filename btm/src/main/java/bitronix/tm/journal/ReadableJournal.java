@@ -36,7 +36,7 @@ public interface ReadableJournal {
      *
      * @param target         the target collection to read the records into.
      * @param includeInvalid specified whether broken records are attempted to be included.
-     * @throws java.io.IOException In case of reading the first record fails.
+     * @throws IOException In case of reading the first record fails.
      */
     void unsafeReadRecordsInto(Collection<JournalRecord> target, boolean includeInvalid) throws IOException;
 }

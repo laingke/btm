@@ -17,6 +17,8 @@ package bitronix.tm.utils;
 
 import bitronix.tm.BitronixVersion;
 import bitronix.tm.internal.BitronixRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.*;
 import javax.crypto.spec.DESKeySpec;
@@ -35,6 +37,8 @@ import java.security.spec.InvalidKeySpecException;
  * @author Ludovic Orban
  */
 public class CryptoEngine {
+
+    private static final Logger log = LoggerFactory.getLogger(CryptoEngine.class);
 
     private static final int LONG_SIZE_IN_BYTES = 8;
     private static final String CRYPTO_PASSWORD = "B1tr0n!+";
@@ -134,13 +138,17 @@ public class CryptoEngine {
      * @throws Exception when an error occurs crypting the given resource password.
      */
     public static void main(String[] args) throws Exception {
+        log.info("Bitronix Transaction Manager {} password property crypter", BitronixVersion.getVersion());
         System.out.println("Bitronix Transaction Manager " + BitronixVersion.getVersion() + " password property crypter");
         System.out.flush();
         if (args.length < 1 || args.length > 2) {
-            System.err.println("Usage: CryptoEngine <password> [cipher]");
-            System.err.println("  where:");
-            System.err.println("    <password> is mandatory and is the resource password to crypt");
-            System.err.println("    [cipher]   is optional and is the cipher to be used to crypt the password");
+            String usageText = """
+                    Usage: CryptoEngine <password> [cipher]
+                      where:
+                        <password> is mandatory and is the resource password to crypt
+                        [cipher]   is optional and is the cipher to be used to crypt the password
+                    """;
+            System.err.println(usageText);
             System.exit(1);
         }
 
@@ -302,7 +310,7 @@ public class CryptoEngine {
          * I don't get the point of this technique, but it is described here:
          * <a href="http://www.faqs.org/qa/rfcc-1940.html">http://www.faqs.org/qa/rfcc-1940.html</a>.
          */
-        private final static byte[] _ORDERED_ALPHABET = {
+        private static final byte[] _ORDERED_ALPHABET = {
                 (byte) '-',
                 (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4',
                 (byte) '5', (byte) '6', (byte) '7', (byte) '8', (byte) '9',
@@ -320,7 +328,7 @@ public class CryptoEngine {
         /**
          * Used in decoding the "ordered" dialect of Base64.
          */
-        private final static byte[] _ORDERED_DECODABET = {
+        private static final byte[] _ORDERED_DECODABET = {
                 -9, -9, -9, -9, -9, -9, -9, -9, -9,                 // Decimal  0 -  8
                 -5, -5,                                      // Whitespace: Tab and Linefeed
                 -9, -9,                                      // Decimal 11 - 12

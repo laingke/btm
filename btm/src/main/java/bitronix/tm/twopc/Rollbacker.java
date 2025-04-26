@@ -72,7 +72,7 @@ public final class Rollbacker extends AbstractPhaseEngine {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("rollback executed on resources " + Decoder.collectResourcesNames(rolledbackResources));
+            log.debug("rollback executed on resources {}", Decoder.collectResourcesNames(rolledbackResources));
         }
 
         // Some resources might have failed the 2nd phase of 2PC.
@@ -80,17 +80,16 @@ public final class Rollbacker extends AbstractPhaseEngine {
         // ones should be picked up by the recoverer.
         // Not interested resources have to be included as well since they returned XA_RDONLY and they
         // don't participate in phase 2: the TX succeded for them.
-        Set<String> rolledbackAndNotInterestedUniqueNames = new HashSet<String>();
-        rolledbackAndNotInterestedUniqueNames.addAll(collectResourcesUniqueNames(rolledbackResources));
+        Set<String> rolledbackAndNotInterestedUniqueNames = new HashSet<>(collectResourcesUniqueNames(rolledbackResources));
         List<XAResourceHolderState> notInterestedResources = collectNotInterestedResources(resourceManager.getAllResources(), interestedResources);
         rolledbackAndNotInterestedUniqueNames.addAll(collectResourcesUniqueNames(notInterestedResources));
 
         if (log.isDebugEnabled()) {
-            List<XAResourceHolderState> rolledbackAndNotInterestedResources = new ArrayList<XAResourceHolderState>();
+            List<XAResourceHolderState> rolledbackAndNotInterestedResources = new ArrayList<>();
             rolledbackAndNotInterestedResources.addAll(rolledbackResources);
             rolledbackAndNotInterestedResources.addAll(notInterestedResources);
 
-            log.debug("rollback succeeded on resources " + Decoder.collectResourcesNames(rolledbackAndNotInterestedResources));
+            log.debug("rollback succeeded on resources {}", Decoder.collectResourcesNames(rolledbackAndNotInterestedResources));
         }
 
         transaction.setStatus(Status.STATUS_ROLLEDBACK, rolledbackAndNotInterestedUniqueNames);
@@ -101,8 +100,8 @@ public final class Rollbacker extends AbstractPhaseEngine {
         List<XAResourceHolderState> resources = phaseException.getResourceStates();
 
         boolean hazard = false;
-        List<XAResourceHolderState> heuristicResources = new ArrayList<XAResourceHolderState>();
-        List<XAResourceHolderState> errorResources = new ArrayList<XAResourceHolderState>();
+        List<XAResourceHolderState> heuristicResources = new ArrayList<>();
+        List<XAResourceHolderState> errorResources = new ArrayList<>();
 
         for (int i = 0; i < exceptions.size(); i++) {
             Exception ex = exceptions.get(i);
@@ -131,9 +130,9 @@ public final class Rollbacker extends AbstractPhaseEngine {
                     " improperly unilaterally committed", phaseException);
         } else {
             throw new BitronixHeuristicMixedException(message + ":" +
-                    (errorResources.size() > 0 ? " resource(s) " + Decoder.collectResourcesNames(errorResources) + " threw unexpected exception" : "") +
-                    (errorResources.size() > 0 && heuristicResources.size() > 0 ? " and" : "") +
-                    (heuristicResources.size() > 0 ? " resource(s) " + Decoder.collectResourcesNames(heuristicResources) + " improperly unilaterally committed" + (hazard ? " (or hazard happened)" : "") : ""), phaseException);
+                    (!errorResources.isEmpty() ? " resource(s) " + Decoder.collectResourcesNames(errorResources) + " threw unexpected exception" : "") +
+                    (!errorResources.isEmpty() && !heuristicResources.isEmpty() ? " and" : "") +
+                    (!heuristicResources.isEmpty() ? " resource(s) " + Decoder.collectResourcesNames(heuristicResources) + " improperly unilaterally committed" + (hazard ? " (or hazard happened)" : "") : ""), phaseException);
         }
     }
 
@@ -172,12 +171,12 @@ public final class Rollbacker extends AbstractPhaseEngine {
         private void rollbackResource(XAResourceHolderState resourceHolder) throws XAException {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("trying to rollback resource " + resourceHolder);
+                    log.debug("trying to rollback resource {}", resourceHolder);
                 }
                 resourceHolder.getXAResource().rollback(resourceHolder.getXid());
                 rolledbackResources.add(resourceHolder);
                 if (log.isDebugEnabled()) {
-                    log.debug("rolled back resource " + resourceHolder);
+                    log.debug("rolled back resource {}", resourceHolder);
                 }
             } catch (XAException ex) {
                 handleXAException(resourceHolder, ex);
@@ -193,7 +192,7 @@ public final class Rollbacker extends AbstractPhaseEngine {
                 case XAException.XA_HEURCOM:
                 case XAException.XA_HEURHAZ:
                 case XAException.XA_HEURMIX:
-                    log.error("heuristic rollback is incompatible with the global state of this transaction - guilty: " + failedResourceHolder);
+                    log.error("heuristic rollback is incompatible with the global state of this transaction - guilty: {}", failedResourceHolder);
                     throw xaException;
 
                 default:
@@ -207,11 +206,11 @@ public final class Rollbacker extends AbstractPhaseEngine {
         private void forgetHeuristicRollback(XAResourceHolderState resourceHolder) {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("handling heuristic rollback on resource " + resourceHolder.getXAResource());
+                    log.debug("handling heuristic rollback on resource {}", resourceHolder.getXAResource());
                 }
                 resourceHolder.getXAResource().forget(resourceHolder.getXid());
                 if (log.isDebugEnabled()) {
-                    log.debug("forgotten heuristically rolled back resource " + resourceHolder.getXAResource());
+                    log.debug("forgotten heuristically rolled back resource {}", resourceHolder.getXAResource());
                 }
             } catch (XAException ex) {
                 String extraErrorDetails = TransactionManagerServices.getExceptionAnalyzer().extractExtraXAExceptionDetails(ex);

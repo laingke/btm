@@ -502,7 +502,8 @@ public class DiskJournal implements Journal, MigratableJournal, ReadableJournal 
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("collected dangling records of " + tla + ", committing: " + committing + ", committed: " + committed + ", delta: " + danglingRecords.size());
+                log.debug("collected dangling records of {}, committing: {}, committed: {}, delta: {}",
+                        tla, committing, committed, danglingRecords.size());
             }
         } finally {
             tlc.close();

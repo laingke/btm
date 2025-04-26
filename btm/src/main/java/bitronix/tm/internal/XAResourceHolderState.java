@@ -87,7 +87,7 @@ public class XAResourceHolderState {
 
     public void setXid(BitronixXid xid) throws BitronixSystemException {
         if (log.isDebugEnabled()) {
-            log.debug("assigning <" + xid + "> to <" + this + ">");
+            log.debug("assigning <{}> to <{}>", xid, this);
         }
         if (this.xid != null && !xid.equals(this.xid)) {
             throw new BitronixSystemException("a XID has already been assigned to " + this);
@@ -150,7 +150,7 @@ public class XAResourceHolderState {
 
         if (this.ended && (flags == XAResource.TMSUSPEND)) {
             if (log.isDebugEnabled()) {
-                log.debug("resource already ended, changing state to suspended: " + this);
+                log.debug("resource already ended, changing state to suspended: {}", this);
             }
             this.suspended = true;
             return;
@@ -169,12 +169,12 @@ public class XAResourceHolderState {
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("suspending " + this + " with " + Decoder.decodeXAResourceFlag(flags));
+                log.debug("suspending {} with {}", this, Decoder.decodeXAResourceFlag(flags));
             }
             suspended = true;
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("ending " + this + " with " + Decoder.decodeXAResourceFlag(flags));
+                log.debug("ending {} with {}", this, Decoder.decodeXAResourceFlag(flags));
             }
             ended = true;
         }
@@ -182,7 +182,7 @@ public class XAResourceHolderState {
         try {
             getXAResource().end(xid, flags);
             if (log.isDebugEnabled()) {
-                log.debug("ended " + this + " with " + Decoder.decodeXAResourceFlag(flags));
+                log.debug("ended {} with {}", this, Decoder.decodeXAResourceFlag(flags));
             }
         } catch (XAException ex) {
             // could mean failed or unilaterally rolled back
@@ -201,7 +201,7 @@ public class XAResourceHolderState {
 
         if (this.ended && (flags == XAResource.TMRESUME)) {
             if (log.isDebugEnabled()) {
-                log.debug("resource already ended, changing state to resumed: " + this);
+                log.debug("resource already ended, changing state to resumed: {}", this);
             }
             this.suspended = false;
             return;
@@ -216,7 +216,7 @@ public class XAResourceHolderState {
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("resuming " + this + " with " + Decoder.decodeXAResourceFlag(flags));
+                log.debug("resuming {} with {}", this, Decoder.decodeXAResourceFlag(flags));
             }
             suspended = false;
         } else {
@@ -225,7 +225,7 @@ public class XAResourceHolderState {
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("starting " + this + " with " + Decoder.decodeXAResourceFlag(flags));
+                log.debug("starting {} with {}", this, Decoder.decodeXAResourceFlag(flags));
             }
             started = true;
         }
@@ -234,7 +234,7 @@ public class XAResourceHolderState {
             int timeoutInSeconds = (int) ((transactionTimeoutDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - MonotonicClock.currentTimeMillis() + 999L) / 1000L);
             timeoutInSeconds = Math.max(1, timeoutInSeconds); // setting a timeout of 0 means resetting -> set it to at least 1
             if (log.isDebugEnabled()) {
-                log.debug("applying resource timeout of " + timeoutInSeconds + "s on " + this);
+                log.debug("applying resource timeout of {}s on {}", timeoutInSeconds, this);
             }
             getXAResource().setTransactionTimeout(timeoutInSeconds);
             isTimeoutAlreadySet = true;
@@ -245,7 +245,7 @@ public class XAResourceHolderState {
         this.started = started;
         this.ended = false;
         if (log.isDebugEnabled()) {
-            log.debug("started " + this + " with " + Decoder.decodeXAResourceFlag(flags));
+            log.debug("started {} with {}", this, Decoder.decodeXAResourceFlag(flags));
         }
     }
 

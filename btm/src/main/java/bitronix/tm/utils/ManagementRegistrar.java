@@ -240,7 +240,7 @@ public final class ManagementRegistrar {
                 mbeanServer.unregisterMBean(new ObjectName(name));
             } catch (InstanceNotFoundException e) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Failed to unregister the JMX instance of name '" + name + "' as it doesn't exist.");
+                    log.debug("Failed to unregister the JMX instance of name '{}' as it doesn't exist.", name);
                 }
             }
         }
@@ -266,7 +266,7 @@ public final class ManagementRegistrar {
         public final void run() {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("Calling " + getClass().getSimpleName() + " on object with name " + name);
+                    log.debug("Calling {} on object with name {}", getClass().getSimpleName(), name);
                 }
                 runCommand();
             } catch (Exception ex) {

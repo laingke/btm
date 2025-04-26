@@ -66,7 +66,7 @@ public class RecoveryHelper {
             throw ex;
         }
         if (log.isDebugEnabled()) {
-            log.debug("STARTRSCAN recovered " + xidCount + " xid(s) on " + xaResourceHolderState);
+            log.debug("STARTRSCAN recovered {} xid(s) on {}", xidCount, xaResourceHolderState);
         }
 
         try {
@@ -76,7 +76,7 @@ public class RecoveryHelper {
                 }
                 xidCount = recover(xaResourceHolderState, xids, XAResource.TMNOFLAGS);
                 if (log.isDebugEnabled()) {
-                    log.debug("NOFLAGS recovered " + xidCount + " xid(s) on " + xaResourceHolderState);
+                    log.debug("NOFLAGS recovered {} xid(s) on {}", xidCount, xaResourceHolderState);
                 }
             }
         } catch (XAException ex) {
@@ -91,7 +91,7 @@ public class RecoveryHelper {
             }
             xidCount = recover(xaResourceHolderState, xids, XAResource.TMENDRSCAN);
             if (log.isDebugEnabled()) {
-                log.debug("ENDRSCAN recovered " + xidCount + " xid(s) on " + xaResourceHolderState);
+                log.debug("ENDRSCAN recovered {} xid(s) on {}", xidCount, xaResourceHolderState);
             }
         } catch (XAException ex) {
             if (log.isDebugEnabled()) {
@@ -125,8 +125,9 @@ public class RecoveryHelper {
         for (Xid xid : xids) {
             if (xid.getFormatId() != BitronixXid.FORMAT_ID) {
                 if (log.isDebugEnabled()) {
-                    log.debug("skipping non-bitronix XID " + xid + "(format ID: " + xid.getFormatId() +
-                            " GTRID: " + new Uid(xid.getGlobalTransactionId()) + "BQUAL: " + new Uid(xid.getBranchQualifier()) + ")");
+                    log.debug("skipping non-bitronix XID {} (format ID: {}, GTRID: {}, BQUAL: {})",
+                            xid, xid.getFormatId(), new Uid(xid.getGlobalTransactionId()),
+                            new Uid(xid.getBranchQualifier()));
                 }
                 continue;
             }
@@ -150,7 +151,8 @@ public class RecoveryHelper {
                     String jvmUniqueIdString = new String(jvmUniqueId);
 
                     if (log.isDebugEnabled()) {
-                        log.debug("skipping XID " + bitronixXid + " as its GTRID's serverId <" + extractedServerIdString + "> does not match this JVM unique ID <" + jvmUniqueIdString + ">");
+                        log.debug("skipping XID {} as its GTRID's serverId <{}> does not match this JVM unique ID <{}>",
+                                bitronixXid, extractedServerIdString, jvmUniqueIdString);
                     }
                     continue;
                 }
@@ -162,13 +164,14 @@ public class RecoveryHelper {
 
             if (alreadyRecoveredXids.contains(bitronixXid)) {
                 if (log.isDebugEnabled()) {
-                    log.debug("already recovered XID " + bitronixXid + ", skipping it");
+                    log.debug("already recovered XID {}, skipping it", bitronixXid);
                 }
                 continue;
             }
 
             if (freshlyRecoveredXids.contains(bitronixXid)) {
-                log.warn("resource " + resourceHolderState.getUniqueName() + " recovered two identical XIDs within the same recover call: " + bitronixXid);
+                log.warn("resource {} recovered two identical XIDs within the same recover call: {}",
+                        resourceHolderState.getUniqueName(), bitronixXid);
                 continue;
             }
 
@@ -222,7 +225,7 @@ public class RecoveryHelper {
         if (forget) {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("forgetting XID " + xid + " on resource " + uniqueName);
+                    log.debug("forgetting XID {} on resource {}", xid, uniqueName);
                 }
                 xaResourceHolderState.getXAResource().forget(xid);
             } catch (XAException ex) {
@@ -272,7 +275,7 @@ public class RecoveryHelper {
         if (forget) {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("forgetting XID " + xid + " on resource " + uniqueName);
+                    log.debug("forgetting XID {} on resource {}", xid, uniqueName);
                 }
                 xaResourceHolderState.getXAResource().forget(xid);
             } catch (XAException ex) {

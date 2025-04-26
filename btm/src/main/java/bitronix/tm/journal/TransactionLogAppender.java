@@ -138,7 +138,8 @@ public class TransactionLogAppender {
             buf.flip();
 
             if (log.isDebugEnabled()) {
-                log.debug("between " + tlog.getWritePosition() + " and " + tlog.getWritePosition() + tlog.calculateTotalRecordSize() + ", writing " + tlog);
+                log.debug("between {} and {}, writing {}",
+                        tlog.getWritePosition(), tlog.getWritePosition() + tlog.calculateTotalRecordSize(), tlog);
             }
 
             final long writePosition = tlog.getWritePosition();

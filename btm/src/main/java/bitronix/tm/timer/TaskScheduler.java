@@ -91,7 +91,7 @@ public class TaskScheduler extends Thread implements Service {
 
     private SortedSet<Task> getSafeIterableTasks() {
         if (tasksLock != null) {
-            return new TreeSet<Task>(tasks);
+            return new TreeSet<>(tasks);
         } else {
             return tasks;
         }
@@ -137,7 +137,7 @@ public class TaskScheduler extends Thread implements Service {
      */
     public void scheduleTransactionTimeout(BitronixTransaction transaction, LocalDateTime executionTime) {
         if (log.isDebugEnabled()) {
-            log.debug("scheduling transaction timeout task on " + transaction + " for " + executionTime);
+            log.debug("scheduling transaction timeout task on {} for {}", transaction, executionTime);
         }
         if (transaction == null) {
             throw new IllegalArgumentException("expected a non-null transaction");
@@ -149,7 +149,7 @@ public class TaskScheduler extends Thread implements Service {
         TransactionTimeoutTask task = new TransactionTimeoutTask(transaction, executionTime, this);
         addTask(task);
         if (log.isDebugEnabled()) {
-            log.debug("scheduled " + task + ", total task(s) queued: " + countTasksQueued());
+            log.debug("scheduled {}, total task(s) queued: {}", task, countTasksQueued());
         }
     }
 
@@ -160,7 +160,7 @@ public class TaskScheduler extends Thread implements Service {
      */
     public void cancelTransactionTimeout(BitronixTransaction transaction) {
         if (log.isDebugEnabled()) {
-            log.debug("cancelling transaction timeout task on " + transaction);
+            log.debug("cancelling transaction timeout task on {}", transaction);
         }
         if (transaction == null) {
             throw new IllegalArgumentException("expected a non-null transaction");
@@ -168,7 +168,7 @@ public class TaskScheduler extends Thread implements Service {
 
         if (!removeTaskByObject(transaction)) {
             if (log.isDebugEnabled()) {
-                log.debug("no task found based on object " + transaction);
+                log.debug("no task found based on object {}", transaction);
             }
         }
     }
@@ -193,7 +193,7 @@ public class TaskScheduler extends Thread implements Service {
         RecoveryTask task = new RecoveryTask(recoverer, executionTime, this);
         addTask(task);
         if (log.isDebugEnabled()) {
-            log.debug("scheduled " + task + ", total task(s) queued: " + countTasksQueued());
+            log.debug("scheduled {}, total task(s) queued: {}", task, countTasksQueued());
         }
     }
 
@@ -205,11 +205,9 @@ public class TaskScheduler extends Thread implements Service {
     public void cancelRecovery(Recoverer recoverer) {
         if (log.isDebugEnabled()) {
             log.debug("cancelling recovery task");
-        }
 
-        if (!removeTaskByObject(recoverer)) {
-            if (log.isDebugEnabled()) {
-                log.debug("no task found based on object " + recoverer);
+            if (!removeTaskByObject(recoverer)) {
+                log.debug("no task found based on object {}", recoverer);
             }
         }
     }
@@ -223,7 +221,7 @@ public class TaskScheduler extends Thread implements Service {
     public void schedulePoolShrinking(XAPool xaPool) {
         LocalDateTime executionTime = xaPool.getNextShrinkDate();
         if (log.isDebugEnabled()) {
-            log.debug("scheduling pool shrinking task on " + xaPool + " for " + executionTime);
+            log.debug("scheduling pool shrinking task on {} for {}", xaPool, executionTime);
         }
         if (executionTime == null) {
             throw new IllegalArgumentException("expected a non-null execution date");
@@ -232,7 +230,7 @@ public class TaskScheduler extends Thread implements Service {
         PoolShrinkingTask task = new PoolShrinkingTask(xaPool, executionTime, this);
         addTask(task);
         if (log.isDebugEnabled()) {
-            log.debug("scheduled " + task + ", total task(s) queued: " + tasks.size());
+            log.debug("scheduled {}, total task(s) queued: {}", task, tasks.size());
         }
     }
 
@@ -243,7 +241,7 @@ public class TaskScheduler extends Thread implements Service {
      */
     public void cancelPoolShrinking(XAPool xaPool) {
         if (log.isDebugEnabled()) {
-            log.debug("cancelling pool shrinking task on " + xaPool);
+            log.debug("cancelling pool shrinking task on {}", xaPool);
         }
         if (xaPool == null) {
             throw new IllegalArgumentException("expected a non-null XA pool");
@@ -251,7 +249,7 @@ public class TaskScheduler extends Thread implements Service {
 
         if (!removeTaskByObject(xaPool)) {
             if (log.isDebugEnabled()) {
-                log.debug("no task found based on object " + xaPool);
+                log.debug("no task found based on object {}", xaPool);
             }
         }
     }
@@ -270,14 +268,14 @@ public class TaskScheduler extends Thread implements Service {
         lock();
         try {
             if (log.isDebugEnabled()) {
-                log.debug("removing task by " + obj);
+                log.debug("removing task by {}", obj);
             }
 
             for (Task task : tasks) {
                 if (task.getObject() == obj) {
                     tasks.remove(task);
                     if (log.isDebugEnabled()) {
-                        log.debug("cancelled " + task + ", total task(s) still queued: " + tasks.size());
+                        log.debug("cancelled {}, total task(s) still queued: {}", task, tasks.size());
                     }
                     return true;
                 }
@@ -320,19 +318,19 @@ public class TaskScheduler extends Thread implements Service {
                 if (task.getExecutionTime().compareTo(Instant.ofEpochMilli(MonotonicClock.currentTimeMillis()).atZone(ZoneId.systemDefault()).toLocalDateTime()) <= 0) {
                     // if the execution time is now or in the past
                     if (log.isDebugEnabled()) {
-                        log.debug("running " + task);
+                        log.debug("running {}", task);
                     }
                     try {
                         task.execute();
                         if (log.isDebugEnabled()) {
-                            log.debug("successfully ran " + task);
+                            log.debug("successfully ran {}", task);
                         }
                     } catch (Exception ex) {
                         log.warn("error running " + task, ex);
                     } finally {
                         toRemove.add(task);
                         if (log.isDebugEnabled()) {
-                            log.debug("total task(s) still queued: " + tasks.size());
+                            log.debug("total task(s) still queued: {}", tasks.size());
                         }
                     }
                 } // if

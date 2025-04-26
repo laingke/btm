@@ -124,8 +124,7 @@ public class BitronixTransactionManager implements TransactionManager, UserTrans
             if (debug) {
                 log.debug("Concurrent sorted map 'ConcurrentSkipListMap' is not available. Falling back to a synchronized TreeMap.");
             }
-            return Collections.synchronizedSortedMap(
-                    new TreeMap<BitronixTransaction, ClearContextSynchronization>(timestampSortComparator));
+            return Collections.synchronizedSortedMap(new TreeMap<>(timestampSortComparator));
         }
     }
 
@@ -365,9 +364,7 @@ public class BitronixTransactionManager implements TransactionManager, UserTrans
         // We're using an iterator, so we must synchronize on the collection
         synchronized (inFlightTransactions) {
             log.debug("dumping {} transaction context(s)", inFlightTransactions.size());
-            for (BitronixTransaction tx : inFlightTransactions.keySet()) {
-                log.debug(tx.toString());
-            }
+            log.debug("dumping tx: {}", inFlightTransactions.keySet());
         }
     }
 
@@ -482,7 +479,7 @@ public class BitronixTransactionManager implements TransactionManager, UserTrans
      * Output BTM version information as INFO log.
      */
     private void logVersion() {
-        log.info("Bitronix Transaction Manager version " + BitronixVersion.getVersion());
+        log.info("Bitronix Transaction Manager version {}", BitronixVersion.getVersion());
         if (log.isDebugEnabled()) {
             log.debug("JVM version {}", System.getProperty("java.version"));
         }

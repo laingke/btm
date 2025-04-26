@@ -107,7 +107,7 @@ public class TransactionLogRecord implements JournalRecord {
         this.sequenceNumber = sequenceNumber;
         this.crc32 = crc32;
         this.gtrid = gtrid;
-        this.uniqueNames = new TreeSet<String>(uniqueNames);
+        this.uniqueNames = new TreeSet<>(uniqueNames);
         this.endRecord = endRecord;
     }
 

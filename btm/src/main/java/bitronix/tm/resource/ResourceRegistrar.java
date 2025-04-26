@@ -103,14 +103,14 @@ public final class ResourceRegistrar {
             final ProducerHolder holder = alreadyRunning ? new InitializableProducerHolder(producer) : new ProducerHolder(producer);
 
             if (resources.add(holder)) {
-                if (holder instanceof InitializableProducerHolder) {
+                if (holder instanceof InitializableProducerHolder initializableProducerHolder) {
                     boolean recovered = false;
                     try {
                         if (log.isDebugEnabled()) {
                             log.debug("Transaction manager is running, recovering resource '{}'.", holder.getUniqueName());
                         }
                         IncrementalRecoverer.recover(producer);
-                        ((InitializableProducerHolder) holder).initialize();
+                        initializableProducerHolder.initialize();
                         recovered = true;
                     } finally {
                         if (!recovered) {
@@ -160,12 +160,12 @@ public final class ResourceRegistrar {
             final XAResourceHolder resourceHolder = producer.findXAResourceHolder(xaResource);
             if (resourceHolder != null) {
                 if (debug) {
-                    log.debug("XAResource " + xaResource + " belongs to " + resourceHolder + " that itself belongs to " + producer);
+                    log.debug("XAResource {} belongs to {} that itself belongs to {}", xaResource, resourceHolder, producer);
                 }
                 return resourceHolder;
             }
             if (debug) {
-                log.debug("XAResource " + xaResource + " does not belong to any resource of " + producer);
+                log.debug("XAResource {} does not belong to any resource of {}", xaResource, producer);
             }
         }
 

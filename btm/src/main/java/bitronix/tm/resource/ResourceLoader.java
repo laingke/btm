@@ -179,13 +179,13 @@ public class ResourceLoader implements Service {
 
             if (ResourceRegistrar.get(producer.getUniqueName()) != null) {
                 if (log.isDebugEnabled()) {
-                    log.debug("resource already registered, skipping it:" + producer.getUniqueName());
+                    log.debug("resource already registered, skipping it: {}", producer.getUniqueName());
                 }
                 continue;
             }
 
             if (log.isDebugEnabled()) {
-                log.debug("creating resource " + producer);
+                log.debug("creating resource {}", producer);
             }
             try {
                 producer.init();
@@ -216,7 +216,7 @@ public class ResourceLoader implements Service {
             if (key.startsWith("resource.")) {
                 String[] keyParts = key.split("\\.");
                 if (keyParts.length < 3) {
-                    log.warn("ignoring invalid entry in configuration file: " + key);
+                    log.warn("ignoring invalid entry in configuration file: {}", key);
                     continue;
                 }
                 String configuredName = keyParts[1];
@@ -280,7 +280,7 @@ public class ResourceLoader implements Service {
             ClassNotFoundException, IllegalAccessException, InstantiationException,
             InvocationTargetException, NoSuchMethodException {
         for (PropertyPair propertyPair : propertyPairs) {
-            if (propertyPair.getName().equals("className")) {
+            if ("className".equals(propertyPair.getName())) {
                 String className = propertyPair.getValue();
                 XAResourceProducer producer = instantiate(className);
                 if (producer == null) {
