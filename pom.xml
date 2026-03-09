@@ -86,7 +86,7 @@
         <mockito.version>5.20.0</mockito.version>
         <junit-jupiter.version>6.0.1</junit-jupiter.version>
 
-        <truffle-api.version>24.2.1</truffle-api.version>
+        <truffle-api.version>25.0.2</truffle-api.version>
 
         <maven-assembly-plugin.version>3.8.0</maven-assembly-plugin.version>
         <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
